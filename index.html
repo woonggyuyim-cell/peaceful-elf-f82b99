@@ -1,11 +1,769 @@
 
-const markerColors = {
-  home: "#2878D0",
-  school: "#E69A22",
-  market: "#32986C",
-  hospital: "#D95463",
-  restaurant: "#9364C7"
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monterrey Living Map</title>
+
+<style>
+:root {
+  --blue:#2878d0;
+  --orange:#e69a22;
+  --green:#32986c;
+  --red:#d95463;
+  --purple:#9364c7;
+  --ink:#263548;
+  --muted:#7b8796;
+  --line:#e7ebf0;
+}
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  color:var(--ink);
+  background:#fff;
+}
+button,input,textarea { font:inherit; }
+button { cursor:pointer; }
+.app {
+  display:grid;
+  grid-template-columns:310px minmax(350px,1fr) 355px;
+  height:100dvh;
+}
+.sidebar,.detail {
+  padding:22px 19px;
+  overflow-y:auto;
+  background:#fff;
+}
+.sidebar { border-right:1px solid var(--line); }
+.detail { border-left:1px solid var(--line); }
+h1 { font-size:22px; margin:0 0 7px; }
+h2 { font-size:20px; margin:12px 0; }
+h3 { font-size:15px; margin:20px 0 10px; }
+.muted {
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+input,textarea {
+  width:100%;
+  border:1px solid #dfe5ec;
+  border-radius:9px;
+  padding:11px;
+  background:#fff;
+  font-size:13px;
+}
+.filters,.legend,.actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:14px 0;
+}
+.chip {
+  border:1px solid #dfe5ec;
+  background:white;
+  border-radius:24px;
+  padding:8px 12px;
+  font-size:12px;
+}
+.chip.active {
+  background:#eaf3ff;
+  border-color:#a9c7e7;
+  color:#205d9b;
+}
+.legend span {
+  display:flex;
+  align-items:center;
+  gap:5px;
+  color:#627185;
+  font-size:11px;
+}
+.dot {
+  width:9px;
+  height:9px;
+  border-radius:50%;
+}
+.item {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:100%;
+  padding:13px 7px;
+  border:0;
+  border-bottom:1px solid #edf0f4;
+  background:white;
+  text-align:left;
+}
+.item:hover,.item.active { background:#f1f7fd; }
+.pin {
+  min-width:38px;
+  height:38px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color:white;
+  font-size:11px;
+  font-weight:bold;
+  border:2px solid white;
+  box-shadow:0 1px 5px #0002;
+}
+.item strong {
+  display:block;
+  font-size:13px;
+  margin-bottom:5px;
+}
+.item small {
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+.mapwrap {
+  position:relative;
+  min-height:350px;
+}
+#map { width:100%; height:100%; }
+.mapnote {
+  position:absolute;
+  z-index:2;
+  top:13px;
+  left:13px;
+  max-width:285px;
+  padding:11px;
+  background:white;
+  border-radius:10px;
+  box-shadow:0 2px 12px #0002;
+  font-size:12px;
+  line-height:1.6;
+}
+.badge {
+  display:inline-block;
+  padding:6px 10px;
+  border-radius:20px;
+  background:#eef3f8;
+  color:#56718c;
+  font-size:11px;
+}
+.card {
+  background:#f5f8fb;
+  padding:13px;
+  border-radius:11px;
+  margin:10px 0;
+  font-size:13px;
+  line-height:1.7;
+}
+.facts {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+  margin:15px 0;
+}
+.fact {
+  background:#f4f7fa;
+  padding:12px;
+  border-radius:10px;
+}
+.fact small {
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+}
+.fact b {
+  display:block;
+  margin-top:5px;
+  font-size:14px;
+}
+.btn {
+  display:inline-block;
+  border:0;
+  border-radius:9px;
+  background:#286fae;
+  color:white;
+  padding:11px 13px;
+  font-size:12px;
+  text-decoration:none;
+}
+.btn.secondary {
+  background:#edf3f9;
+  color:#315c82;
+}
+.btn:disabled {
+  opacity:.45;
+  cursor:not-allowed;
+}
+.route,.admin {
+  border-top:1px solid var(--line);
+  margin-top:22px;
+  padding-top:16px;
+}
+.route-selector {
+  display:grid;
+  grid-template-columns:1fr 36px 1fr;
+  align-items:center;
+  gap:7px;
+  margin-top:12px;
+}
+.route-place {
+  min-height:95px;
+  border:2px solid #e2e8ef;
+  border-radius:12px;
+  background:white;
+  padding:11px 8px;
+  text-align:left;
+}
+.route-place .caption {
+  display:block;
+  color:#788797;
+  font-size:11px;
+  margin-bottom:8px;
+}
+.route-place strong {
+  display:block;
+  font-size:12px;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.route-place.origin.active {
+  border-color:var(--blue);
+  background:#edf5ff;
+  box-shadow:0 0 0 3px #2878d020;
+}
+.route-place.destination.active {
+  border-color:var(--green);
+  background:#ecf9f2;
+  box-shadow:0 0 0 3px #32986c20;
+}
+.swap {
+  width:36px;
+  height:36px;
+  border:1px solid #e1e6ed;
+  border-radius:50%;
+  background:white;
+  font-size:20px;
+}
+.route-hint {
+  background:#f5f8fb;
+  border-radius:9px;
+  padding:11px;
+  margin:12px 0;
+  font-size:12px;
+  line-height:1.6;
+}
+.route-hint.origin {
+  background:#edf5ff;
+  color:#2866a2;
+}
+.route-hint.destination {
+  background:#ecf9f2;
+  color:#287d57;
+}
+.route-buttons {
+  display:flex;
+  gap:8px;
+}
+.route-buttons .btn:first-child { flex:1; }
+.route-buttons .btn:last-child { flex:2; }
+.restaurant-panel {
+  border:1px solid #e6dcf3;
+  background:#faf7ff;
+  padding:13px;
+  border-radius:12px;
+  margin:15px 0;
+}
+.restaurant-panel h3 { margin:0 0 10px; }
+.restaurant-panel label,.admin label {
+  display:block;
+  font-size:12px;
+  margin:10px 0 6px;
+}
+.restaurant-panel .btn { margin-top:10px; }
+.admin summary {
+  cursor:pointer;
+  font-size:13px;
+  font-weight:bold;
+}
+.notice {
+  color:#886775;
+  font-size:12px;
+  line-height:1.7;
+}
+.footer {
+  color:#8995a2;
+  font-size:11px;
+  line-height:1.7;
+  margin-top:20px;
+}
+.hidden { display:none!important; }
+
+@media(max-width:1000px) {
+  .app {
+    grid-template-columns:270px 1fr;
+    height:auto;
+  }
+  .mapwrap { height:65vh; }
+  .detail {
+    grid-column:1/-1;
+    border-top:1px solid var(--line);
+  }
+}
+@media(max-width:650px) {
+  .app { display:flex; flex-direction:column; }
+  .sidebar { max-height:430px; }
+  .mapwrap { height:55vh; }
+  .detail { border-left:0; }
+}
+</style>
+</head>
+
+<body>
+<main class="app">
+
+<aside class="sidebar">
+  <h1>Monterrey Living Map</h1>
+  <p class="muted">몬테레이 주재원 주택 · 학교 · 생활 지도</p>
+
+  <input id="search" placeholder="주택, 학교, 병원, 식당 검색">
+
+  <div id="filters" class="filters"></div>
+  <div id="legend" class="legend"></div>
+  <p id="counter" class="muted"></p>
+
+  <section id="restaurantPanel" class="restaurant-panel hidden">
+    <h3>🍽️ 식당 추가하기</h3>
+
+    <label for="restaurantName">식당 이름</label>
+    <input id="restaurantName" placeholder="식당 이름">
+
+    <label for="restaurantAddress">식당 주소</label>
+    <input id="restaurantAddress"
+           placeholder="주소, Monterrey, Nuevo León">
+
+    <button id="addRestaurant" class="btn">
+      + 식당 등록
+    </button>
+
+    <p class="muted">
+      식당 정보는 현재 브라우저에 저장됩니다.
+      공개 홈페이지에 반영하려면 JSON 데이터를
+      코드에 추가해야 합니다.
+    </p>
+  </section>
+
+  <div id="list"></div>
+</aside>
+
+<section class="mapwrap">
+  <div id="map"></div>
+  <div id="mapnote" class="mapnote">
+    Google Maps · 좌표가 등록된 장소에
+    카테고리별 색상 마커가 표시됩니다.
+  </div>
+</section>
+
+<aside class="detail">
+  <div id="detailContent">
+    <h2>장소를 선택하세요</h2>
+    <p class="muted">
+      왼쪽 목록 또는 지도 마커를 선택하면
+      상세정보가 표시됩니다.
+    </p>
+  </div>
+
+  <section class="route">
+    <h3>🚗 차량 길찾기</h3>
+
+    <div class="route-selector">
+      <button id="originBox" class="route-place origin">
+        <span class="caption">🔵 출발지</span>
+        <strong id="originName">선택해 주세요</strong>
+      </button>
+
+      <button id="swapBtn" class="swap"
+              title="출발지와 도착지 바꾸기">⇄</button>
+
+      <button id="destinationBox"
+              class="route-place destination">
+        <span class="caption">🟢 도착지</span>
+        <strong id="destinationName">선택해 주세요</strong>
+      </button>
+    </div>
+
+    <div id="routeHint" class="route-hint">
+      출발지 또는 도착지를 선택하세요.
+    </div>
+
+    <div class="route-buttons">
+      <button id="resetRoute" class="btn secondary">
+        초기화
+      </button>
+      <button id="routeBtn" class="btn" disabled>
+        Google Maps 길찾기
+      </button>
+    </div>
+
+    <p class="muted">
+      출발지나 도착지를 누르면 선택 모드가 활성화됩니다.
+      지도 마커 또는 왼쪽 목록에서 장소를 선택하세요.
+    </p>
+  </section>
+
+  <details class="admin">
+    <summary>⚙️ 운영자 위치 관리</summary>
+
+    <p class="muted">
+      정확한 위치를 확인한 후 좌표를 입력하거나
+      지도에서 건물 위치를 지정하세요.
+    </p>
+
+    <label for="lat">위도</label>
+    <input id="lat" placeholder="Latitude">
+
+    <label for="lng">경도</label>
+    <input id="lng" placeholder="Longitude">
+
+    <div class="actions">
+      <button id="pickBtn" class="btn secondary">
+        지도에서 위치 지정
+      </button>
+      <button id="saveBtn" class="btn">
+        좌표 저장
+      </button>
+      <button id="exportBtn" class="btn secondary">
+        JSON 내보내기
+      </button>
+    </div>
+
+    <p id="adminStatus" class="notice"></p>
+
+    <h3>좌표 JSON 가져오기</h3>
+    <textarea id="importJSON" rows="5"
+      placeholder='{"R01":{"lat":25.6,"lng":-100.3}}'></textarea>
+
+    <button id="importBtn" class="btn secondary">
+      JSON 가져오기
+    </button>
+  </details>
+
+  <p class="footer">
+    주택 임대료는 2026년 10월 안내 자료 기준
+    평균 참고 금액입니다.
+    실제 임대 조건은 확인이 필요합니다.
+    별도의 장소 검색·좌표 변환·경로 계산 API는
+    사용하지 않습니다.
+    기본 Google Maps API 사용량에 따라
+    비용이 발생할 수 있습니다.
+  </p>
+</aside>
+
+</main>
+
+<script>
+"use strict";
+
+const $ = id => document.getElementById(id);
+
+const categories = {
+  all: { label:"전체", color:"#64748b" },
+  home: { label:"주택", color:"#2878d0" },
+  school: { label:"학교", color:"#e69a22" },
+  market: { label:"마트·쇼핑", color:"#32986c" },
+  hospital: { label:"병원", color:"#d95463" },
+  restaurant: { label:"식당", color:"#9364c7" }
 };
+
+const housing = [
+  ["SAQQARA",67000,"San Pedro Garza García","190–641㎡","T1 / T2","수영장, 스파, 사우나, 헬스장, 스크린골프","고급 마감과 관리. 생활 규정 및 교통체증 확인"],
+  ["KOI",56000,"Valle Oriente, San Pedro","130–832㎡","단독 타워","인피니티 풀, 사우나, 키즈룸, 피트니스","고층 조망 우수. 일부 세대 기둥 및 냉방 설비 확인"],
+  ["ACACIA",53000,"Distrito Armida, Valle Oriente","49.2–122.5㎡","T1 / T2","수영장, 바비큐, 피트니스, 패들장","상가 접근 편리. 저층 야간 소음 확인"],
+  ["Club Sonoma",55000,"Camino al Mirador, Monterrey","100–245㎡","Vento / Alberi 등","테니스, 축구, 피트니스, 수영","클럽 회원권 별도. 진입로 경사"],
+  ["LIU",52000,"San Pedro",null,"East / West",null,"KOI 인근. West동 설비 점검 이력"],
+  ["WEST",51000,"Santa Catarina",null,"1~5동",null,"ASFM 통학 가정 후보"],
+  ["Nuevo Sur",44000,"Monterrey",null,"11개 동",null,"상권 접근 편리. 주말 방문객 많음"],
+  ["PRIVANZAS",60000,"San Pedro",null,"Sector 구분",null,"언덕에 위치한 주택단지"],
+  ["MURALLA",65000,"San Pedro",null,"Sector 구분",null,"프라이빗 주택단지. Costco 인근"],
+  ["BAKARA",35000,"Santa María",null,"단독 타워",null,"산페드로 생활권 인접"],
+  ["ORDAZ",41000,"Santa María",null,"Norte / Sur",null,"4인 가족 후보"],
+  ["VERDALBA",49000,"Santa María",null,"1동 / 2동 예정",null,"공용시설 우수. 면적 확인"],
+  ["LIVIN",45000,"Santa María",null,"단독 타워",null,"게스트 스위트. 건물 노후화 확인"],
+  ["AVALON",45000,"Santa María",null,"4개 동 계획",null,"신축 소형 주택. 1~2인 가구 후보"],
+  ["ANIDA",55000,"Santa María",null,"1~2동 / 추가 동 예정",null,"시설과 주거 공간 우수. 입주 제약 확인"],
+  ["MIA",38000,"Santa María",null,"단독 타워",null,"3인 가족 후보"]
+];
+
+let places = housing.map((r,i) => ({
+  id:"R" + String(i+1).padStart(2,"0"),
+  name:r[0],
+  type:"home",
+  price:r[1],
+  area:r[2],
+  size:r[3],
+  buildings:r[4],
+  amenities:r[5],
+  note:r[6],
+  query:r[0] + " " + r[2] + " Nuevo León México"
+}));
+
+const facilities = [
+  ["S01","Colegio Inglés · San Agustín","school","Colegio Inglés San Agustín San Pedro Garza García Nuevo León"],
+  ["S02","San Roberto · San Agustín","school","San Roberto International School San Agustín Nuevo León"],
+  ["S03","ASFM","school","American School Foundation of Monterrey Santa Catarina Nuevo León"],
+  ["S04","AIM · Valle","school","American Institute of Monterrey Campus Valle Nuevo León"],
+  ["S05","Prepa Tec · Santa Catarina","school","Prepa Tec Campus Santa Catarina Nuevo León"],
+  ["S06","Euroamericano · Valle","school","Colegio Euroamericano de Monterrey Campus Valle"],
+  ["F01","Costco · San Pedro","market","Costco San Pedro Garza García Nuevo León"],
+  ["F02","Oriental Mart · San Pedro","market","Oriental Mart San Pedro Garza García Nuevo León"],
+  ["F03","Hospital Ángeles","hospital","Hospital Ángeles Valle Oriente Nuevo León"],
+  ["F04","Hospital Zambrano","hospital","Hospital Zambrano Hellion Monterrey Nuevo León"]
+];
+
+facilities.forEach(([id,name,type,query]) => {
+  places.push({
+    id,name,type,query,
+    area:"Monterrey / Nuevo León",
+    note:"Google Maps에서 정확한 주소를 확인하세요."
+  });
+});
+
+/*
+  공개용 좌표 등록 영역
+
+  검증된 좌표만 입력하세요.
+
+  예:
+  "R01": {lat:25.123456, lng:-100.123456}
+
+  임의 좌표를 등록하지 마세요.
+*/
+const publishedCoordinates = {};
+
+/*
+  공개용 식당 등록 영역
+*/
+const publishedRestaurants = [];
+
+places.push(...publishedRestaurants);
+
+function readStorage(key,fallback) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || fallback;
+  } catch(error) {
+    return fallback;
+  }
+}
+
+let coordinates = {
+  ...publishedCoordinates,
+  ...readStorage("mlm_verified_coordinates_v1",{}),
+  ...readStorage("mlm_coords_v2",{})
+};
+
+let localRestaurants =
+  readStorage("mlm_restaurants_v2",[]);
+
+if (!Array.isArray(localRestaurants)) {
+  localRestaurants = [];
+}
+
+const existingIds = new Set(places.map(p => p.id));
+
+localRestaurants = localRestaurants.filter(p => {
+  if (!p || typeof p.id !== "string" ||
+      typeof p.name !== "string" ||
+      typeof p.query !== "string" ||
+      existingIds.has(p.id)) {
+    return false;
+  }
+  existingIds.add(p.id);
+  p.type = "restaurant";
+  return true;
+});
+
+places.push(...localRestaurants);
+
+let map = null;
+let markers = new Map();
+let selected = null;
+let activeCategory = "all";
+let picking = false;
+
+let routeMode = "origin";
+let routeOrigin = null;
+let routeDestination = null;
+
+function escapeHTML(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[char])
+  );
+}
+
+function validCoordinate(c) {
+  if (!c) return false;
+
+  const lat = Number(c.lat);
+  const lng = Number(c.lng);
+
+  return Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 && lat <= 90 &&
+    lng >= -180 && lng <= 180;
+}
+
+function filteredPlaces() {
+  const text = $("search").value.trim().toLowerCase();
+
+  return places.filter(p => {
+    const categoryOK =
+      activeCategory === "all" ||
+      p.type === activeCategory;
+
+    const searchOK =
+      (p.name + " " + (p.area || "") + " " + p.query)
+        .toLowerCase()
+        .includes(text);
+
+    return categoryOK && searchOK;
+  });
+}
+
+function renderFilters() {
+  $("filters").innerHTML =
+    Object.entries(categories).map(([key,c]) => `
+      <button class="chip ${activeCategory===key?"active":""}"
+              data-category="${key}">
+        ${c.label}
+      </button>
+    `).join("");
+
+  document.querySelectorAll("[data-category]")
+    .forEach(button => {
+      button.onclick = () => {
+        activeCategory = button.dataset.category;
+        render();
+      };
+    });
+
+  $("restaurantPanel").classList.toggle(
+    "hidden",
+    activeCategory !== "restaurant"
+  );
+}
+
+function renderLegend() {
+  $("legend").innerHTML =
+    Object.entries(categories)
+      .filter(([key]) => key !== "all")
+      .map(([key,c]) => `
+        <span>
+          <i class="dot" style="background:${c.color}"></i>
+          ${c.label}
+        </span>
+      `).join("");
+}
+
+function renderList() {
+  const visible = filteredPlaces();
+
+  const registered = visible.filter(
+    p => validCoordinate(coordinates[p.id])
+  ).length;
+
+  $("counter").textContent =
+    `${visible.length}개 장소 · 좌표 등록 ${registered}개`;
+
+  $("list").innerHTML = visible.length
+    ? visible.map(p => {
+        const color = categories[p.type].color;
+        const verified =
+          validCoordinate(coordinates[p.id]);
+
+        const price = p.price
+          ? ` · 평균 $${p.price.toLocaleString()} MXN/월`
+          : "";
+
+        let routeMark = "";
+
+        if (routeOrigin === p.id) {
+          routeMark += " · 🔵 출발";
+        }
+        if (routeDestination === p.id) {
+          routeMark += " · 🟢 도착";
+        }
+
+        return `
+          <button class="item ${selected?.id===p.id?"active":""}"
+                  data-place="${escapeHTML(p.id)}">
+            <span class="pin"
+                  style="background:${color}">
+              ${escapeHTML(p.id)}
+            </span>
+            <span>
+              <strong>
+                ${escapeHTML(p.name)}
+                ${verified ? "📍" : ""}
+              </strong>
+              <small>
+                ${categories[p.type].label}
+                ${price}
+                ${routeMark}
+              </small>
+            </span>
+          </button>
+        `;
+      }).join("")
+    : '<div class="muted">검색 결과가 없습니다.</div>';
+
+  document.querySelectorAll("[data-place]")
+    .forEach(button => {
+      button.onclick = () =>
+        selectPlace(button.dataset.place);
+    });
+}
+
+function markerIcon(p) {
+  const color = categories[p.type].color;
+
+  const isOrigin = routeOrigin === p.id;
+  const isDestination = routeDestination === p.id;
+
+  const ring = isOrigin
+    ? "#2878d0"
+    : isDestination
+      ? "#32986c"
+      : "#ffffff";
+
+  const stroke = isOrigin || isDestination ? 5 : 3;
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="52" height="52" viewBox="0 0 52 52">
+      <circle cx="26" cy="26" r="21"
+              fill="${color}"
+              stroke="${ring}"
+              stroke-width="${stroke}"/>
+      <text x="26" y="30"
+            text-anchor="middle"
+            fill="white"
+            font-size="12"
+            font-family="Arial"
+            font-weight="bold">${p.id}</text>
+    </svg>
+  `;
+
+  return {
+    url:"data:image/svg+xml;charset=UTF-8," +
+      encodeURIComponent(svg),
+    scaledSize:new google.maps.Size(46,46),
+    anchor:new google.maps.Point(23,23)
+  };
+}
 
 function syncMarkers() {
   if (!map) return;
@@ -13,55 +771,518 @@ function syncMarkers() {
   markers.forEach(marker => marker.setMap(null));
   markers.clear();
 
-  const searchText = $('search').value
-    .trim()
-    .toLowerCase();
+  for (const p of filteredPlaces()) {
+    const c = coordinates[p.id];
 
-  for (const place of places) {
-    const position = saved[place.id];
-
-    if (!position) continue;
-
-    const categoryMatches =
-      filter === 'all' ||
-      place.type === filter;
-
-    const searchMatches =
-      (place.name + ' ' + place.area)
-        .toLowerCase()
-        .includes(searchText);
-
-    if (!categoryMatches || !searchMatches) {
-      continue;
-    }
-
-    const color =
-      markerColors[place.type] || "#64748B";
+    if (!validCoordinate(c)) continue;
 
     const marker = new google.maps.Marker({
-      position,
-      map,
-      title: place.name,
-      label: {
-        text: place.id,
-        color: "#FFFFFF",
-        fontSize: "11px",
-        fontWeight: "bold"
+      map:map,
+      position:{
+        lat:Number(c.lat),
+        lng:Number(c.lng)
       },
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        fillColor: color,
-        fillOpacity: 1,
-        strokeColor: "#FFFFFF",
-        strokeWeight: 2,
-        scale: 19
-      }
+      title:p.name,
+      icon:markerIcon(p),
+      zIndex:
+        routeOrigin===p.id ||
+        routeDestination===p.id ? 100 : 1
     });
 
-    marker.addListener('click', () => {
-      selectPlace(place.id);
+    marker.addListener("click", () => {
+      selectPlace(p.id);
     });
 
-    markers.set(place.id, marker);
+    markers.set(p.id,marker);
   }
 }
+
+function render() {
+  renderFilters();
+  renderLegend();
+  renderList();
+  renderRoute();
+  syncMarkers();
+}
+
+function mapSearchURL(p) {
+  return "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(p.query);
+}
+
+function showDetails(p) {
+  const c = coordinates[p.id];
+  const verified = validCoordinate(c);
+
+  const facts = [];
+
+  if (p.price) {
+    facts.push(`
+      <div class="fact">
+        <small>평균 월세 (2026.10)</small>
+        <b>$${p.price.toLocaleString()} MXN</b>
+      </div>
+    `);
+  }
+
+  if (p.size) {
+    facts.push(`
+      <div class="fact">
+        <small>면적 범위</small>
+        <b>${escapeHTML(p.size)}</b>
+      </div>
+    `);
+  }
+
+  $("detailContent").innerHTML = `
+    <span class="badge">
+      ${categories[p.type].label} · ${escapeHTML(p.id)}
+    </span>
+
+    <h2>${escapeHTML(p.name)}</h2>
+
+    <p class="muted">
+      ${escapeHTML(p.area || "주소 확인 필요")}
+    </p>
+
+    <div class="facts">${facts.join("")}</div>
+
+    ${p.buildings ? `
+      <h3>단지 구성</h3>
+      <div class="card">
+        ${escapeHTML(p.buildings)}
+      </div>
+    ` : ""}
+
+    ${p.amenities ? `
+      <h3>편의시설</h3>
+      <div class="card">
+        ${escapeHTML(p.amenities)}
+      </div>
+    ` : ""}
+
+    <h3>특징 및 참고사항</h3>
+    <div class="card">
+      ${escapeHTML(p.note || "상세정보 확인 중")}
+    </div>
+
+    <p class="notice">
+      ${verified
+        ? "📍 좌표가 등록되어 있습니다."
+        : "정확한 좌표 확인 전입니다. 임의 마커는 표시하지 않습니다."}
+    </p>
+
+    <div class="actions">
+      <a class="btn secondary"
+         target="_blank"
+         rel="noopener noreferrer"
+         href="${mapSearchURL(p)}">
+        Google Maps 위치 확인
+      </a>
+    </div>
+  `;
+
+  $("lat").value = verified ? c.lat : "";
+  $("lng").value = verified ? c.lng : "";
+}
+
+function selectPlace(id) {
+  const p = places.find(x => x.id === id);
+  if (!p) return;
+
+  selected = p;
+
+  if (routeMode === "origin") {
+    routeOrigin = p.id;
+
+    if (routeDestination === p.id) {
+      routeDestination = null;
+    }
+
+    routeMode = "destination";
+
+  } else if (routeMode === "destination") {
+    if (routeOrigin !== p.id) {
+      routeDestination = p.id;
+      routeMode = null;
+    }
+  }
+
+  showDetails(p);
+  renderRoute();
+  renderList();
+  syncMarkers();
+
+  const c = coordinates[p.id];
+
+  if (map && validCoordinate(c)) {
+    map.panTo({
+      lat:Number(c.lat),
+      lng:Number(c.lng)
+    });
+    map.setZoom(15);
+
+    $("mapnote").textContent =
+      p.name + " · 등록된 위치";
+
+  } else {
+    $("mapnote").textContent =
+      p.name +
+      " · 정확한 좌표는 확인 전입니다. 왼쪽 목록에서는 길찾기 장소로 선택할 수 있습니다.";
+  }
+}
+
+function renderRoute() {
+  const origin = places.find(
+    p => p.id === routeOrigin
+  );
+
+  const destination = places.find(
+    p => p.id === routeDestination
+  );
+
+  $("originName").textContent =
+    origin ? origin.name : "선택해 주세요";
+
+  $("destinationName").textContent =
+    destination ? destination.name : "선택해 주세요";
+
+  $("originBox").classList.toggle(
+    "active",
+    routeMode === "origin"
+  );
+
+  $("destinationBox").classList.toggle(
+    "active",
+    routeMode === "destination"
+  );
+
+  const hint = $("routeHint");
+  hint.className = "route-hint";
+
+  if (routeMode === "origin") {
+    hint.classList.add("origin");
+    hint.textContent =
+      "🔵 출발지 선택 중 · 왼쪽 목록 또는 지도 마커를 누르세요.";
+
+  } else if (routeMode === "destination") {
+    hint.classList.add("destination");
+    hint.textContent =
+      "🟢 도착지 선택 중 · 출발지와 다른 장소를 누르세요.";
+
+  } else if (origin && destination) {
+    hint.textContent =
+      "선택 완료! Google Maps 길찾기를 누르세요.";
+
+  } else {
+    hint.textContent =
+      "출발지 또는 도착지를 눌러 장소 선택을 시작하세요.";
+  }
+
+  $("routeBtn").disabled =
+    !origin ||
+    !destination ||
+    origin.id === destination.id;
+}
+
+$("originBox").onclick = () => {
+  routeMode = "origin";
+  renderRoute();
+};
+
+$("destinationBox").onclick = () => {
+  routeMode = "destination";
+  renderRoute();
+};
+
+$("swapBtn").onclick = () => {
+  const oldOrigin = routeOrigin;
+
+  routeOrigin = routeDestination;
+  routeDestination = oldOrigin;
+
+  renderRoute();
+  renderList();
+  syncMarkers();
+};
+
+$("resetRoute").onclick = () => {
+  routeOrigin = null;
+  routeDestination = null;
+  routeMode = "origin";
+
+  renderRoute();
+  renderList();
+  syncMarkers();
+};
+
+function routePoint(p) {
+  const c = coordinates[p.id];
+
+  return validCoordinate(c)
+    ? `${c.lat},${c.lng}`
+    : p.query;
+}
+
+$("routeBtn").onclick = () => {
+  const origin = places.find(
+    p => p.id === routeOrigin
+  );
+
+  const destination = places.find(
+    p => p.id === routeDestination
+  );
+
+  if (!origin || !destination ||
+      origin.id === destination.id) {
+    alert("서로 다른 출발지와 도착지를 선택하세요.");
+    return;
+  }
+
+  const url =
+    "https://www.google.com/maps/dir/?api=1" +
+    "&origin=" +
+    encodeURIComponent(routePoint(origin)) +
+    "&destination=" +
+    encodeURIComponent(routePoint(destination)) +
+    "&travelmode=driving";
+
+  window.open(url,"_blank","noopener,noreferrer");
+};
+
+function initMap() {
+  map = new google.maps.Map($("map"),{
+    center:{lat:25.667,lng:-100.315},
+    zoom:11,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:true
+  });
+
+  syncMarkers();
+
+  map.addListener("click",event => {
+    if (!picking || !selected) return;
+
+    $("lat").value =
+      event.latLng.lat().toFixed(7);
+
+    $("lng").value =
+      event.latLng.lng().toFixed(7);
+
+    picking = false;
+
+    $("adminStatus").textContent =
+      "위치를 선택했습니다. 정확한 위치인지 확인하고 좌표 저장을 누르세요.";
+  });
+}
+
+window.initMap = initMap;
+
+window.gm_authFailure = () => {
+  $("mapnote").textContent =
+    "Google Maps API 키 또는 웹사이트 제한 설정을 확인하세요.";
+};
+
+$("search").addEventListener("input",render);
+
+$("pickBtn").onclick = () => {
+  if (!selected) {
+    alert("먼저 왼쪽에서 장소를 선택하세요.");
+    return;
+  }
+
+  picking = true;
+
+  $("adminStatus").textContent =
+    "지도에서 정확한 건물 위치를 탭하세요.";
+};
+
+$("saveBtn").onclick = () => {
+  if (!selected) {
+    alert("먼저 장소를 선택하세요.");
+    return;
+  }
+
+  const lat = Number($("lat").value);
+  const lng = Number($("lng").value);
+
+  const c = {lat,lng};
+
+  if (!$("lat").value ||
+      !$("lng").value ||
+      !validCoordinate(c)) {
+    alert("올바른 위도와 경도를 입력하세요.");
+    return;
+  }
+
+  coordinates[selected.id] = c;
+
+  localStorage.setItem(
+    "mlm_coords_v2",
+    JSON.stringify(coordinates)
+  );
+
+  render();
+  showDetails(selected);
+
+  $("adminStatus").textContent =
+    "좌표를 이 브라우저에 저장했습니다. 공개하려면 JSON을 내보내 코드에 반영하세요.";
+};
+
+$("addRestaurant").onclick = () => {
+  const name =
+    $("restaurantName").value.trim();
+
+  const address =
+    $("restaurantAddress").value.trim();
+
+  if (!name || !address) {
+    alert("식당 이름과 주소를 입력하세요.");
+    return;
+  }
+
+  const id = "D" + String(Date.now());
+
+  const restaurant = {
+    id,
+    name,
+    type:"restaurant",
+    query:address,
+    area:"Monterrey / Nuevo León",
+    note:"운영자 등록 식당. 주소와 위치 확인 필요."
+  };
+
+  localRestaurants.push(restaurant);
+  places.push(restaurant);
+
+  localStorage.setItem(
+    "mlm_restaurants_v2",
+    JSON.stringify(localRestaurants)
+  );
+
+  $("restaurantName").value = "";
+  $("restaurantAddress").value = "";
+
+  activeCategory = "restaurant";
+
+  render();
+  selectPlace(id);
+};
+
+$("exportBtn").onclick = () => {
+  const data = {
+    coordinates,
+    restaurants:localRestaurants
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(data,null,2)],
+    {type:"application/json"}
+  );
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "monterrey-living-map-data.json";
+  a.click();
+
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  },1000);
+};
+
+$("importBtn").onclick = () => {
+  try {
+    const data = JSON.parse(
+      $("importJSON").value
+    );
+
+    const incoming = data.coordinates || data;
+
+    if (!incoming ||
+        typeof incoming !== "object" ||
+        Array.isArray(incoming)) {
+      throw new Error("좌표 형식이 올바르지 않습니다.");
+    }
+
+    let count = 0;
+
+    for (const [id,c] of Object.entries(incoming)) {
+      if (places.some(p => p.id === id) &&
+          validCoordinate(c)) {
+        coordinates[id] = {
+          lat:Number(c.lat),
+          lng:Number(c.lng)
+        };
+        count++;
+      }
+    }
+
+    if (Array.isArray(data.restaurants)) {
+      const ids = new Set(places.map(p => p.id));
+
+      for (const r of data.restaurants) {
+        if (!r ||
+            typeof r.id !== "string" ||
+            typeof r.name !== "string" ||
+            typeof r.query !== "string" ||
+            !r.id.startsWith("D") ||
+            ids.has(r.id)) {
+          continue;
+        }
+
+        const restaurant = {
+          id:r.id,
+          name:r.name,
+          type:"restaurant",
+          query:r.query,
+          area:typeof r.area === "string"
+            ? r.area
+            : "Monterrey / Nuevo León",
+          note:typeof r.note === "string"
+            ? r.note
+            : "운영자 등록 식당"
+        };
+
+        localRestaurants.push(restaurant);
+        places.push(restaurant);
+        ids.add(r.id);
+      }
+
+      localStorage.setItem(
+        "mlm_restaurants_v2",
+        JSON.stringify(localRestaurants)
+      );
+    }
+
+    localStorage.setItem(
+      "mlm_coords_v2",
+      JSON.stringify(coordinates)
+    );
+
+    render();
+
+    $("adminStatus").textContent =
+      `${count}개 장소의 좌표를 가져왔습니다.`;
+
+  } catch(error) {
+    alert(
+      "JSON 형식을 확인하세요: " +
+      error.message
+    );
+  }
+};
+
+render();
+</script>
+
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async">
+</script>
+
+</body>
+</html>
