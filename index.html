@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Monterrey Living Map</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;font-family:Arial,'Noto Sans KR',sans-serif;color:#263343;background:#fff}.app{display:grid;grid-template-columns:300px minmax(0,1fr) 320px;height:100dvh}.sidebar,.detail{padding:24px;background:white;overflow:auto}.sidebar{border-right:1px solid #e9edf1}.detail{border-left:1px solid #e9edf1}h1{font-size:21px;margin:0 0 7px}h2{font-size:18px;margin:0 0 12px}.sub{color:#718091;font-size:13px;line-height:1.6}.search{width:100%;border:1px solid #dfe5ec;border-radius:9px;padding:12px;margin:24px 0 15px;font-size:14px}.tabs{display:flex;flex-wrap:wrap;gap:7px}.tab{border:1px solid #e2e7ee;background:#fff;border-radius:20px;padding:8px 11px;cursor:pointer;color:#526173}.tab.active{background:#eef4fb;border-color:#b8cde5;color:#285c94}.places{margin-top:20px}.place{width:100%;text-align:left;background:#fff;border:0;border-bottom:1px solid #edf0f4;padding:14px 4px;cursor:pointer}.place strong{display:block;font-size:14px}.place small{color:#7c8997;display:block;margin-top:5px}.place:hover{background:#f7f9fc}#map{height:100%;min-height:380px}.detail p{font-size:14px;line-height:1.7;color:#596879}.hint{padding:14px;background:#f6f9fc;border-radius:10px;font-size:13px;color:#607184;line-height:1.7}.route{display:inline-block;margin-top:14px;background:#3f73a7;color:white;text-decoration:none;border-radius:9px;padding:11px 15px;font-size:14px}.route[hidden]{display:none}.status{position:absolute;z-index:2;top:12px;left:50%;transform:translateX(-50%);background:#fff;padding:9px 14px;border-radius:9px;box-shadow:0 2px 12px #0002;font-size:13px}.mapwrap{position:relative;min-width:0}@media(max-width:900px){.app{grid-template-columns:240px minmax(0,1fr)}.detail{grid-column:1/-1;border-top:1px solid #e9edf1}.app{height:auto}.sidebar{height:65vh}#map{height:65vh}}@media(max-width:600px){.app{display:flex;flex-direction:column}.sidebar{height:auto;max-height:40vh}.mapwrap,#map{height:48vh}.detail{min-height:170px}}
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <h1>Monterrey Living Map</h1>
+      <div class="sub">몬테레이 생활을 위한 주택·학교·편의시설 지도</div>
+      <input id="search" class="search" type="search" placeholder="장소 검색" aria-label="장소 검색" />
+      <div class="tabs" id="tabs"></div>
+      <div class="places" id="places"></div>
+    </aside>
+    <section class="mapwrap"><div class="status" id="status">Google 지도 연결 중...</div><div id="map" aria-label="몬테레이 지도"></div></section>
+    <aside class="detail">
+      <h2 id="detailTitle">장소를 선택해 주세요</h2>
+      <p id="detailText">왼쪽에서 장소를 선택하면 이곳에 상세 정보가 표시됩니다.</p>
+      <div class="hint">월세·면적·학교 및 생활시설 데이터는 확인된 자료부터 추가할 예정입니다. 정확한 좌표가 확인되지 않은 장소는 지도에 임의로 표시하지 않습니다.</div>
+      <a id="route" class="route" target="_blank" rel="noopener noreferrer" hidden>Google Maps에서 길찾기</a>
+    </aside>
+  </main>
+  <script>
+    // 아직 좌표가 검증되지 않은 장소는 지도 마커를 생성하지 않습니다.
+    const places = [
+      ...['SAQQARA','KOI','ACACIA','Club Sonoma','Nuevo Sur','LIU','WEST','PRIVANZAS','MURALLA','BAKARA','ORDAZ','VERDALBA','LIVIN','AVALON','ANIDA','MIA'].map(name=>({name,category:'주택'}))
+    ];
+    const categories=['전체','주택','학교','쇼핑','병원','식당'];
+    let map,markers=[],selectedCategory='전체';
+    const $=id=>document.getElementById(id);
+    function render(){
+      $('tabs').innerHTML='';
+      categories.forEach(cat=>{const b=document.createElement('button');b.className='tab'+(cat===selectedCategory?' active':'');b.textContent=cat;b.onclick=()=>{selectedCategory=cat;render()};$('tabs').appendChild(b)});
+      const q=$('search').value.trim().toLocaleLowerCase();
+      const filtered=places.filter(p=>(selectedCategory==='전체'||p.category===selectedCategory)&&p.name.toLocaleLowerCase().includes(q));
+      $('places').innerHTML='';
+      if(!filtered.length){$('places').textContent='등록된 장소가 없습니다.';return}
+      filtered.forEach(p=>{const b=document.createElement('button');b.className='place';const title=document.createElement('strong');title.textContent=p.name;const subtitle=document.createElement('small');subtitle.textContent=p.category+' · 위치 확인 중';b.append(title,subtitle);b.onclick=()=>selectPlace(p);$('places').appendChild(b)})
+    }
+    function selectPlace(p){
+      $('detailTitle').textContent=p.name;
+      $('detailText').textContent='분류: '+p.category+' · 정확한 위치와 상세 정보를 확인한 뒤 업데이트할 예정입니다.';
+      $('route').hidden=true;
+      if(p.lat!=null&&p.lng!=null&&map){map.panTo({lat:p.lat,lng:p.lng});map.setZoom(15);$('route').href='https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(p.lat+','+p.lng);$('route').hidden=false}
+    }
+    function initMap(){
+      map=new google.maps.Map($('map'),{center:{lat:25.6866,lng:-100.3161},zoom:11,mapTypeControl:false,streetViewControl:false,fullscreenControl:true});
+      $('status').hidden=true;
+    }
+    window.initMap=initMap;
+    window.gm_authFailure=()=>{$('status').textContent='API 키 또는 웹사이트 제한을 확인해 주세요.'};
+    $('search').addEventListener('input',render);render();
+  </script>
+  <!-- 아래 YOUR_GOOGLE_MAPS_API_KEY를 제한 설정한 브라우저 API 키로 교체하세요. -->
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap&loading=async"></script>
+</body>
+</html>
