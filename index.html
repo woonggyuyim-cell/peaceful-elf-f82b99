@@ -7,1016 +7,1795 @@
 <title>Monterrey Living Map</title>
 <style>
 :root{
- --blue:#2878d0;--orange:#e69a22;
- --green:#32986c;--red:#d95463;
- --purple:#9364c7;--ink:#25354a;
- --muted:#778596;--line:#e5eaf0
+  --blue:#2878d0;
+  --ink:#25354a;
+  --muted:#778596;
+  --line:#e5eaf0;
 }
 *{box-sizing:border-box}
-body{margin:0;background:white;color:var(--ink);font-family:Arial,"Noto Sans KR",sans-serif}
+body{
+  margin:0;
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  color:var(--ink);
+  background:#fff;
+}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
-.app{display:grid;grid-template-columns:310px minmax(350px,1fr) 355px;height:100dvh}
-.sidebar,.detail{background:white;padding:19px;overflow-y:auto}
+button:disabled{opacity:.5;cursor:not-allowed}
+.app{
+  display:grid;
+  grid-template-columns:310px minmax(350px,1fr) 355px;
+  height:100dvh;
+}
+.sidebar,.detail{
+  padding:22px;
+  overflow-y:auto;
+  background:white;
+}
 .sidebar{border-right:1px solid var(--line)}
 .detail{border-left:1px solid var(--line)}
-h1{font-size:22px;margin:0 0 8px}
-h2{font-size:19px;margin:12px 0}
-h3{font-size:15px;margin:18px 0 10px}
-.muted{color:var(--muted);font-size:12px;line-height:1.65}
-input,select,textarea{width:100%;padding:11px;border:1px solid #dfe5ec;border-radius:9px;background:white;color:var(--ink);font-size:13px}
-textarea{resize:vertical}
-.filters,.legend,.actions,.tags{display:flex;flex-wrap:wrap;gap:7px;margin:13px 0}
-.chip,.tag{border:1px solid #dfe5ec;background:white;border-radius:25px;padding:8px 11px;font-size:12px}
-.chip.active{background:#eaf3ff;color:#205d9b;border-color:#a9c7e7}
-.tag.active{background:#2878d0;color:white;border-color:#2878d0}
-.tag-filter{border:1px solid #e2e9f0;background:#f8fafc;border-radius:12px;padding:12px;margin:12px 0}
-.tag-filter strong{font-size:12px}
-.tag-filter .tags{margin:10px 0 4px}
-.tag-filter .tag{padding:7px 10px;font-size:11px}
-.tag-filter p{margin:7px 0 0}
-.legend span{display:flex;align-items:center;gap:5px;font-size:11px;color:#627185}
-.dot{width:9px;height:9px;border-radius:50%}
-.item{display:flex;gap:11px;align-items:center;width:100%;padding:12px 6px;border:0;border-bottom:1px solid #edf0f4;background:white;text-align:left}
-.item:hover,.item.active{background:#f1f7fd}
-.pin{width:43px;height:43px;min-width:43px;display:flex;align-items:center;justify-content:center;border-radius:50%;border:3px solid white;box-shadow:0 1px 5px #0003}
-.pin svg{width:23px;height:23px}
-.item strong{display:block;font-size:13px;margin-bottom:5px}
-.item small{font-size:11px;color:var(--muted);line-height:1.5}
-.item-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:5px}
-.item-tags span{background:#edf4fc;color:#376a9a;border-radius:5px;padding:3px 5px;font-size:10px}
-.mapwrap{position:relative;min-height:350px}
-#map{width:100%;height:100%}
-.mapnote{position:absolute;top:13px;left:13px;z-index:2;max-width:280px;background:white;padding:11px;border-radius:10px;box-shadow:0 2px 12px #0002;font-size:12px;line-height:1.5}
-.add-floating{position:absolute;right:22px;bottom:26px;z-index:5;width:60px;height:60px;border:0;border-radius:50%;background:var(--blue);color:white;font-size:36px;box-shadow:0 5px 18px #0003}
-.pick-banner{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);z-index:5;background:white;border:2px solid var(--blue);border-radius:12px;padding:13px;width:min(90%,380px);text-align:center;box-shadow:0 4px 18px #0002;font-size:13px}
-.detail-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
-.category-banner{background:#f0f2f5;border-radius:10px;padding:12px 15px;font-size:13px;font-weight:700;flex:1}
-.edit-round{width:43px;height:43px;min-width:43px;border-radius:50%;border:1px solid #dce3eb;background:white;color:#286fae;display:flex;align-items:center;justify-content:center;font-size:19px}
-.route{padding:15px;border:1px solid var(--line);border-radius:14px;margin-bottom:20px}
-.route h3{margin:0 0 12px}
-.route-selector{display:grid;grid-template-columns:1fr 36px 1fr;gap:7px;align-items:center}
-.route-place{min-height:98px;padding:11px 7px;border:2px solid #e2e8ef;border-radius:12px;background:white;text-align:center}
-.route-place .caption{display:block;color:#788797;font-size:11px;margin-bottom:9px}
-.route-place strong{display:block;font-size:12px;line-height:1.5;overflow-wrap:anywhere;text-align:center}
-.route-place.origin.active{border-color:var(--blue);background:#edf5ff}
-.route-place.destination.active{border-color:var(--green);background:#ecf9f2}
-.swap{width:36px;height:36px;border:1px solid #e1e6ed;border-radius:50%;background:white;font-size:20px}
-.route-hint{padding:10px;background:#f5f8fb;border-radius:9px;margin:12px 0;font-size:12px;line-height:1.5;text-align:center}
-.route-buttons{display:flex;gap:8px}
-.route-buttons button:first-child{flex:1}
-.route-buttons button:last-child{flex:2}
-.btn{display:inline-block;border:0;border-radius:9px;padding:11px 13px;background:#286fae;color:white;font-size:12px;text-decoration:none}
-.btn.secondary{background:#edf3f9;color:#315c82}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.card{background:#f5f8fb;padding:13px;border-radius:11px;margin:10px 0;font-size:13px;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
-.facts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:15px 0}
-.fact{background:#f4f7fa;padding:12px;border-radius:10px}
-.fact small{display:block;font-size:11px;color:var(--muted);line-height:1.5}
-.fact b{display:block;margin-top:5px;font-size:14px}
-.detail-tags{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
-.detail-tags span{background:#eaf3ff;color:#286fae;border-radius:20px;padding:7px 10px;font-size:11px}
-.status{padding:9px;border-radius:9px;background:#f0f7f3;color:#35704d;font-size:11px;line-height:1.5}
-.status.error{background:#fff0f0;color:#b34444}
-.footer{font-size:11px;color:#8995a2;line-height:1.7;margin-top:20px}
+h1{font-size:23px;margin:0 0 15px}
+h2{font-size:20px;margin:0 0 10px}
+h3{font-size:14px;margin:20px 0 9px}
+.subtitle,.muted{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.7;
+}
+.search{
+  width:100%;
+  padding:13px;
+  border:1px solid #dbe1e8;
+  border-radius:12px;
+  outline:none;
+  margin:16px 0;
+}
+.filters,.tags,.legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.chip{
+  padding:10px 13px;
+  border:1px solid #e0e5ea;
+  background:white;
+  border-radius:24px;
+  font-size:12px;
+  color:#344256;
+}
+.chip.active{
+  background:#eaf3fd;
+  border-color:#b6d2ee;
+  color:#175a9d;
+  font-weight:bold;
+}
+.tag{
+  border:1px solid #d6e1ee;
+  border-radius:20px;
+  padding:8px 11px;
+  background:#fff;
+  font-size:12px;
+}
+.tag.active{
+  color:#fff;
+  background:var(--blue);
+  border-color:var(--blue);
+}
+.tag-section{
+  margin:12px 0;
+  padding:12px;
+  background:#f6f9fd;
+  border-radius:12px;
+}
+.tag-section.hidden{display:none}
+.legend{
+  font-size:11px;
+  color:var(--muted);
+  margin:15px 0;
+}
+.dot{
+  display:inline-block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  margin-right:4px;
+}
+.status{
+  padding:11px;
+  border-radius:10px;
+  background:#eff8f2;
+  color:#32714a;
+  font-size:12px;
+  margin:12px 0;
+}
+.status.error{
+  background:#fff1f1;
+  color:#b43d3d;
+}
+.row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.small-btn{
+  border:1px solid #dce5ed;
+  background:white;
+  padding:8px 11px;
+  border-radius:9px;
+  font-size:12px;
+}
+.item{
+  display:flex;
+  width:100%;
+  text-align:left;
+  align-items:center;
+  gap:13px;
+  background:white;
+  border:0;
+  border-bottom:1px solid #eef0f4;
+  padding:15px 4px;
+}
+.item:hover,.item.active{background:#f3f8ff}
+.item strong{
+  display:block;
+  font-size:13px;
+  margin-bottom:6px;
+}
+.item small{
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.5;
+}
+.pin{
+  width:47px;
+  height:47px;
+  min-width:47px;
+  border:3px solid white;
+  outline:1px solid #e4eaf0;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 6px #0002;
+}
+.map-wrap{
+  position:relative;
+  min-height:400px;
+}
+#map{
+  width:100%;
+  height:100%;
+}
+.mapnote{
+  position:absolute;
+  left:15px;
+  top:15px;
+  max-width:310px;
+  padding:12px;
+  background:#fffffff0;
+  border-radius:10px;
+  font-size:12px;
+  box-shadow:0 2px 10px #0001;
+}
+.add-floating{
+  position:absolute;
+  right:24px;
+  bottom:25px;
+  width:69px;
+  height:69px;
+  border:0;
+  border-radius:50%;
+  background:var(--blue);
+  color:white;
+  font-size:39px;
+  box-shadow:0 5px 20px #0003;
+}
+.category-banner{
+  background:#f3f5f8;
+  padding:15px;
+  border-radius:13px;
+  font-weight:bold;
+  font-size:13px;
+}
+.edit-round{
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  border:1px solid #e0e6ee;
+  background:white;
+  font-size:18px;
+}
+.route-card{
+  margin-top:15px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:17px;
+}
+.route-card h3{margin:0 0 15px}
+.route-grid{
+  display:grid;
+  grid-template-columns:1fr 34px 1fr;
+  gap:8px;
+  align-items:center;
+}
+.route-box{
+  min-height:112px;
+  padding:12px 7px;
+  background:white;
+  border:2px solid #e2e8ef;
+  border-radius:13px;
+  text-align:center;
+}
+.route-box.active{
+  background:#eff6ff;
+  border-color:var(--blue);
+}
+.route-box small{
+  display:block;
+  color:var(--muted);
+  font-size:11px;
+  margin:8px 0;
+}
+.route-box strong{
+  font-size:12px;
+  overflow-wrap:anywhere;
+}
+.swap{
+  border:1px solid var(--line);
+  background:white;
+  border-radius:50%;
+  width:34px;
+  height:34px;
+  font-size:19px;
+}
+.btn{
+  border:0;
+  padding:12px;
+  background:var(--blue);
+  color:white;
+  border-radius:10px;
+  font-weight:bold;
+  font-size:12px;
+}
+.btn.secondary{
+  background:#eef3f8;
+  color:#41617f;
+}
+.btn.full{width:100%}
+.route-actions{
+  display:grid;
+  grid-template-columns:90px 1fr;
+  gap:8px;
+  margin-top:12px;
+}
+.facts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:15px 0;
+}
+.fact{
+  background:#f4f8fc;
+  padding:13px;
+  border-radius:12px;
+}
+.fact small{
+  display:block;
+  font-size:11px;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+.fact b{font-size:14px}
+.card{
+  border:1px solid var(--line);
+  padding:13px;
+  border-radius:12px;
+  font-size:13px;
+  line-height:1.7;
+  overflow-wrap:anywhere;
+}
+.detail-content{margin-top:24px}
+.detail-content .tags{margin:12px 0}
 .hidden{display:none!important}
-.modal-overlay{position:fixed;z-index:1000;inset:0;background:#0007;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal{width:min(100%,470px);max-height:90dvh;overflow-y:auto;background:white;border-radius:17px;padding:23px;box-shadow:0 12px 40px #0003}
-.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.modal-head h2{margin:0}
-.close{border:0;border-radius:50%;background:#f0f3f7;width:35px;height:35px;font-size:20px}
-.modal label{display:block;margin:13px 0 6px;font-size:12px;font-weight:bold}
-.modal-actions{display:flex;gap:8px;margin-top:17px}
-.modal-actions .btn{flex:1}
-.modal-status{margin-top:10px;font-size:12px;line-height:1.6}
-.location-selected{padding:11px;background:#ecf9f2;color:#287d57;border-radius:9px;font-size:12px;line-height:1.6;margin-top:10px}
-.rent-inputs{display:grid;grid-template-columns:1fr 1fr;gap:9px}
-.tag-picker{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
-.tag-picker label{display:flex;align-items:center;gap:5px;margin:0;border:1px solid #e0e6ed;border-radius:20px;padding:8px 10px;font-size:12px;font-weight:normal}
-.tag-picker label.checked{background:#eaf3ff;border-color:#83b5e9;color:#205d9b}
-.tag-picker input{width:auto;margin:0;accent-color:#2878d0}
+.modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1000;
+  background:#18283b99;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:14px;
+}
+.modal{
+  background:white;
+  border-radius:17px;
+  padding:22px;
+  width:min(560px,100%);
+  max-height:94dvh;
+  overflow-y:auto;
+}
+.modal h2{margin-bottom:7px}
+.field{margin:14px 0}
+.field label{
+  display:block;
+  font-size:12px;
+  font-weight:bold;
+  margin-bottom:7px;
+}
+.field input,.field select,.field textarea{
+  display:block;
+  width:100%;
+  padding:12px;
+  border:1px solid #dce3eb;
+  border-radius:10px;
+  background:white;
+  outline:none;
+}
+.field textarea{min-height:85px;resize:vertical}
+.form-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.form-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:20px;
+}
+.pick-banner{
+  position:absolute;
+  z-index:10;
+  top:75px;
+  left:15px;
+  right:15px;
+  padding:15px;
+  background:#fff7dd;
+  border:1px solid #f4d685;
+  border-radius:12px;
+  font-size:13px;
+}
 @media(max-width:1000px){
- .app{grid-template-columns:270px 1fr;height:auto}
- .mapwrap{height:65vh}
- .detail{grid-column:1/-1;border-top:1px solid var(--line)}
+  .app{
+    grid-template-columns:280px minmax(350px,1fr);
+    height:auto;
+  }
+  .sidebar{height:700px}
+  .map-wrap{height:700px}
+  .detail{
+    grid-column:1/-1;
+    border-top:1px solid var(--line);
+  }
 }
 @media(max-width:650px){
- .app{display:flex;flex-direction:column}
- .sidebar{max-height:460px}
- .mapwrap{height:55vh}
- .detail{border-left:0}
- .add-floating{width:55px;height:55px;right:15px;bottom:15px}
+  .app{display:flex;flex-direction:column}
+  .sidebar{height:auto;max-height:480px}
+  .map-wrap{height:460px;min-height:460px}
+  .detail{padding:17px}
+  .form-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
 <body>
 
-<main class="app">
+<div class="app">
+
 <aside class="sidebar">
-<h1>Monterrey Living Map</h1>
-<p class="muted">몬테레이 주재원 주택 · 학교 · 생활 지도</p>
-<input id="search" placeholder="주택, 학교, 병원, 식당 검색">
-<div id="filters" class="filters"></div>
-<div id="housingFilter" class="tag-filter hidden">
-<strong>🏠 주택 맞춤 필터</strong>
-<div id="housingTags" class="tags"></div>
-<p class="muted">복수 선택 가능 · 선택한 조건을 모두 만족하는 주택 표시</p>
-<button id="clearTags" class="btn secondary" style="margin-top:9px;padding:7px 10px">필터 초기화</button>
-</div>
-<div id="legend" class="legend"></div>
-<p id="counter" class="muted"></p>
-<p id="syncStatus" class="status">공용 장소 정보를 불러오는 중...</p>
-<div id="list"></div>
+  <h1>Monterrey Living Map</h1>
+  <div class="subtitle">몬테레이 주재원 주택 · 학교 · 생활 지도</div>
+
+  <input
+    id="search"
+    class="search"
+    placeholder="주택, 학교, 병원, 식당 검색"
+  >
+
+  <div id="filters" class="filters"></div>
+
+  <div id="tagSection" class="tag-section hidden">
+    <div class="row" style="margin-bottom:10px">
+      <strong style="font-size:12px">주택 조건 필터</strong>
+      <button id="clearTags" class="small-btn">필터 초기화</button>
+    </div>
+    <div id="housingFilters" class="tags"></div>
+    <p class="muted">
+      여러 조건을 선택하면 선택한 조건을 모두 만족하는 주택이 표시됩니다.
+    </p>
+  </div>
+
+  <div id="legend" class="legend"></div>
+
+  <div class="row">
+    <p id="counter" class="muted">장소 불러오는 중...</p>
+    <button id="refreshBtn" class="small-btn">↻ 새로고침</button>
+  </div>
+
+  <div id="syncStatus" class="status">Supabase 연결 준비 중...</div>
+  <div id="list"></div>
 </aside>
 
-<section class="mapwrap">
-<div id="map"></div>
-<div id="mapnote" class="mapnote">
-Google Maps · 카테고리별 픽토그램으로 장소를 표시합니다.
-</div>
-<button id="addFloating" class="add-floating" aria-label="새 장소 추가">+</button>
-<div id="pickBanner" class="pick-banner hidden">
-<strong>📍 지도에서 정확한 위치를 탭하세요</strong>
-<p class="muted">위치를 선택하면 등록·편집 화면으로 돌아갑니다.</p>
-<button id="cancelPick" class="btn secondary">취소</button>
-</div>
-</section>
+<main class="map-wrap">
+  <div id="map"></div>
 
-<aside class="detail">
-<div class="detail-top">
-<div id="categoryBanner" class="category-banner">장소를 선택해 주세요</div>
-<button id="editRound" class="edit-round hidden" title="장소 편집" aria-label="장소 편집">✎</button>
-</div>
+  <div id="mapnote" class="mapnote">
+    Google Maps · 카테고리별 픽토그램으로 장소를 표시합니다.
+  </div>
 
-<section class="route">
-<h3>🚗 차량 길찾기</h3>
-<div class="route-selector">
-<button id="originBox" class="route-place origin">
-<span class="caption">🔵 출발지</span>
-<strong id="originName">선택해 주세요</strong>
-</button>
-<button id="swapBtn" class="swap" title="출발지와 도착지 바꾸기">⇄</button>
-<button id="destinationBox" class="route-place destination">
-<span class="caption">🟢 도착지</span>
-<strong id="destinationName">선택해 주세요</strong>
-</button>
-</div>
-<div id="routeHint" class="route-hint"></div>
-<div class="route-buttons">
-<button id="resetRoute" class="btn secondary">초기화</button>
-<button id="routeBtn" class="btn" disabled>Google Maps 길찾기</button>
-</div>
-<p class="muted" style="text-align:center">
-출발지·도착지 박스를 누른 다음 목록이나 지도 마커를 선택하세요.
-</p>
-</section>
+  <div id="pickBanner" class="pick-banner hidden">
+    <strong>📍 위치 선택 중</strong>
+    <p>지도에서 장소의 정확한 위치를 눌러주세요.</p>
+    <button id="cancelPick" class="small-btn">취소</button>
+  </div>
 
-<div id="detailContent">
-<h2>장소를 선택하세요</h2>
-<p class="muted">선택한 장소의 상세정보가 여기에 표시됩니다.</p>
-</div>
-
-<p class="footer">
-기존 주택 임대료는 방 개수가 확인되지 않아 새 2룸·3룸 평균 임대료에 자동 입력하지 않았습니다.
-사용자 등록 정보는 별도 검증되지 않았습니다.
-Google Maps 및 Supabase 사용량에 따라 비용이 발생할 수 있습니다.
-</p>
-</aside>
+  <button
+    id="addFloating"
+    class="add-floating"
+    title="새 장소 추가"
+  >+</button>
 </main>
 
+<aside class="detail">
+  <div class="row">
+    <div id="categoryBanner" class="category-banner" style="flex:1">
+      장소를 선택해 주세요
+    </div>
+    <button id="editRound" class="edit-round hidden" title="장소 편집">
+      ✎
+    </button>
+  </div>
+
+  <div class="route-card">
+    <h3>🚗 차량 길찾기</h3>
+
+    <div class="route-grid">
+      <button id="originBox" class="route-box active">
+        🔵 출발지
+        <small>선택한 장소</small>
+        <strong id="originName">선택해 주세요</strong>
+      </button>
+
+      <button id="swapBtn" class="swap" title="출발지와 도착지 교환">
+        ⇄
+      </button>
+
+      <button id="destinationBox" class="route-box">
+        🟢 도착지
+        <small>선택한 장소</small>
+        <strong id="destinationName">선택해 주세요</strong>
+      </button>
+    </div>
+
+    <p id="routeHint" class="muted">
+      출발지 선택 중 · 장소를 눌러주세요.
+    </p>
+
+    <div class="route-actions">
+      <button id="resetRoute" class="btn secondary">초기화</button>
+      <button id="routeBtn" class="btn" disabled>
+        Google Maps 길찾기
+      </button>
+    </div>
+
+    <p class="muted">
+      출발지·도착지 박스를 누른 다음 목록이나 지도 마커를 선택하세요.
+    </p>
+  </div>
+
+  <div id="detailContent" class="detail-content">
+    <h2>장소를 선택하세요</h2>
+    <p class="muted">선택한 장소의 상세정보가 표시됩니다.</p>
+  </div>
+</aside>
+
+</div>
+
 <div id="modalOverlay" class="modal-overlay hidden">
-<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-<div class="modal-head">
-<h2 id="modalTitle">📍 새 장소 추가</h2>
-<button id="closeModal" class="close" aria-label="닫기">×</button>
-</div>
-<p id="modalIntro" class="muted">등록한 장소는 모든 방문자에게 공유됩니다.</p>
+  <div class="modal">
+    <div class="row">
+      <h2 id="modalTitle">새 장소 추가</h2>
+      <button id="closeModal" class="small-btn">✕</button>
+    </div>
 
-<label for="newCategory">카테고리 *</label>
-<select id="newCategory">
-<option value="home">🏠 주택·아파트</option>
-<option value="school">🏫 학교</option>
-<option value="market">🛒 마트·쇼핑</option>
-<option value="hospital">🏥 병원</option>
-<option value="restaurant">🍽️ 식당</option>
-</select>
+    <p id="modalIntro" class="muted">
+      등록한 정보는 모든 방문자에게 공개됩니다.
+    </p>
 
-<label for="newName">장소 이름 *</label>
-<input id="newName" maxlength="100" placeholder="장소 이름">
+    <div class="field">
+      <label>카테고리 *</label>
+      <select id="newCategory">
+        <option value="home">주택</option>
+        <option value="school">학교</option>
+        <option value="market">마트·쇼핑</option>
+        <option value="hospital">병원</option>
+        <option value="restaurant">식당</option>
+      </select>
+    </div>
 
-<label for="newArea">지역 *</label>
-<select id="newArea">
-<option value="" disabled selected>지역 선택</option>
-<option value="Santa Catarina">Santa Catarina</option>
-<option value="San Pedro">San Pedro</option>
-<option value="Nuevo Sur">Nuevo Sur</option>
-<option value="Carretera Nacional">Carretera Nacional</option>
-<option value="Apodaca">Apodaca</option>
-</select>
+    <div class="field">
+      <label>장소 이름 *</label>
+      <input id="newName" maxlength="100" placeholder="예: SAQQARA">
+    </div>
 
-<div id="housingFields">
-<label>평균 임대료 (MXN/월)</label>
-<div class="rent-inputs">
-<div>
-<label for="rent2">방 2개</label>
-<input id="rent2" type="number" min="0" max="10000000" placeholder="예: 40000">
-</div>
-<div>
-<label for="rent3">방 3개</label>
-<input id="rent3" type="number" min="0" max="10000000" placeholder="예: 55000">
-</div>
-</div>
-<p class="muted">확인된 임대료만 입력하세요. 모르는 항목은 비워두면 됩니다.</p>
+    <div class="field">
+      <label>지역 *</label>
+      <select id="newArea">
+        <option value="">지역 선택</option>
+        <option value="Santa Catarina">Santa Catarina</option>
+        <option value="San Pedro">San Pedro</option>
+        <option value="Nuevo Sur">Nuevo Sur</option>
+        <option value="Carretera Nacional">Carretera Nacional</option>
+        <option value="Apodaca">Apodaca</option>
+      </select>
+    </div>
 
-<label>주택 특징 필터 (복수 선택)</label>
-<div id="tagPicker" class="tag-picker"></div>
-<p class="muted">해당 주택에 실제로 적합한 항목만 선택하세요.</p>
+    <div id="homeFields">
+      <div class="form-grid">
+        <div class="field">
+          <label>평균 임대료 · 방 2개 (MXN/월)</label>
+          <input
+            id="newRent2"
+            type="number"
+            min="0"
+            max="10000000"
+            placeholder="예: 35000"
+          >
+        </div>
+        <div class="field">
+          <label>평균 임대료 · 방 3개 (MXN/월)</label>
+          <input
+            id="newRent3"
+            type="number"
+            min="0"
+            max="10000000"
+            placeholder="예: 45000"
+          >
+        </div>
+      </div>
 
-<label for="newBuildings">단지 구성</label>
-<input id="newBuildings" maxlength="200" placeholder="예: A동 / B동">
-<label for="newAmenities">편의시설</label>
-<textarea id="newAmenities" rows="2" maxlength="1000" placeholder="수영장, 헬스장 등"></textarea>
-</div>
+      <div class="field">
+        <label>주택 추천 필터 (복수 선택 가능)</label>
+        <div id="editHousingTags" class="tags"></div>
+      </div>
 
-<label for="newNote">특징 및 참고사항</label>
-<textarea id="newNote" rows="3" maxlength="1000" placeholder="시설, 장점, 주의사항 등"></textarea>
+      <div class="field">
+        <label>건물 구성 / 주택 유형</label>
+        <input id="newBuildings" placeholder="예: T1 / T2">
+      </div>
 
-<label>장소 위치 *</label>
-<button id="pickNew" class="btn secondary" style="width:100%">📍 지도에서 위치 선택</button>
-<div id="locationStatus" class="location-selected">지도에서 위치를 선택해 주세요.</div>
-<p class="muted">지도에서 위치를 탭하면 편집 화면으로 돌아옵니다.</p>
+      <div class="field">
+        <label>편의시설</label>
+        <textarea
+          id="newAmenities"
+          placeholder="예: 수영장, 헬스장, 키즈룸"
+        ></textarea>
+      </div>
+    </div>
 
-<div class="modal-actions">
-<button id="cancelModal" class="btn secondary">취소</button>
-<button id="saveNew" class="btn">저장·공유</button>
-</div>
-<p id="modalStatus" class="modal-status"></p>
-</div>
+    <div class="field">
+      <label>특징 및 참고사항</label>
+      <textarea
+        id="newNote"
+        placeholder="주택 특징, 통학, 교통, 주의사항 등"
+      ></textarea>
+    </div>
+
+    <div class="field">
+      <label>지도 위치 *</label>
+      <p id="locationStatus" class="muted">
+        지도에서 위치를 선택해 주세요.
+      </p>
+      <button id="pickNew" class="btn secondary full">
+        📍 지도에서 위치 선택
+      </button>
+    </div>
+
+    <p id="modalStatus" class="muted"></p>
+
+    <div class="form-actions">
+      <button id="cancelModal" class="btn secondary">취소</button>
+      <button id="saveNew" class="btn">저장하기</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
 <script>
 "use strict";
 
-const SUPABASE_URL="https://hmxvihhknmkhgjcssdtf.supabase.co";
-const SUPABASE_KEY="sb_publishable_vsPDFkgGdUkNyHddcGCa5g_nznI41sC";
-const $=id=>document.getElementById(id);
+/* ===============================
+   1. 서비스 설정
+================================ */
 
-let db=null;
-try{
- if(window.supabase?.createClient){
-  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
- }
-}catch(e){console.error(e)}
+const SUPABASE_URL =
+  "https://hmxvihhknmkhgjcssdtf.supabase.co";
 
-const categories={
- all:{label:"전체",color:"#64748b"},
- home:{label:"주택",color:"#2878d0"},
- school:{label:"학교",color:"#e69a22"},
- market:{label:"마트·쇼핑",color:"#32986c"},
- hospital:{label:"병원",color:"#d95463"},
- restaurant:{label:"식당",color:"#9364c7"}
-};
+const SUPABASE_KEY =
+  "sb_publishable_vsPDFkgGdUkNyHddcGCa5g_nznI41sC";
 
-const housingTagOptions=[
- "3인 가족","4인 가족","자연","도심",
- "넓은 집","반려견","아파트","까사"
-];
+const db = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
 
-const iconPaths={
- home:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 21v-8h6v8"/>',
- school:'<path d="M3 21V9l9-5 9 5v12"/><path d="M3 21h18"/><path d="M9 21v-6h6v6"/><path d="M7 11h2M15 11h2"/><path d="M12 4V2"/>',
- market:'<circle cx="9" cy="20" r="1"/><circle cx="19" cy="20" r="1"/><path d="M2 3h3l3 13h12l2-9H6"/>',
- hospital:'<path d="M9 3h6v6h6v6H9v-6H3V9h6z"/>',
- restaurant:'<path d="M4 3v7M7 3v7M10 3v7"/><path d="M4 10h6M7 10v11"/><path d="M18 21V3c-5 3-5 10 0 11"/>'
-};
+const $ = id => document.getElementById(id);
 
-function pictogram(type){
- return `<svg viewBox="0 0 24 24" width="24" height="24"
- xmlns="http://www.w3.org/2000/svg" fill="none"
- stroke="white" stroke-width="2"
- stroke-linecap="round" stroke-linejoin="round">
- ${iconPaths[type]||iconPaths.home}</svg>`;
-}
-
-/* 기존 주택 정보: 과거 단일 임대료는 참고용으로만 보존 */
-const housing=[
- ["SAQQARA",67000,"San Pedro Garza García","T1 / T2","수영장, 스파, 사우나, 헬스장, 스크린골프","고급 마감과 관리. 생활 규정 및 교통체증 확인"],
- ["KOI",56000,"Valle Oriente, San Pedro","단독 타워","인피니티 풀, 사우나, 키즈룸, 피트니스","고층 조망 우수. 일부 세대 기둥 및 냉방 설비 확인"],
- ["ACACIA",53000,"Distrito Armida, Valle Oriente","T1 / T2","수영장, 바비큐, 피트니스, 패들장","상가 접근 편리. 저층 야간 소음 확인"],
- ["Club Sonoma",55000,"Camino al Mirador, Monterrey","Vento / Alberi 등","테니스, 축구, 피트니스, 수영","클럽 회원권 별도. 진입로 경사"],
- ["LIU",52000,"San Pedro","East / West","","KOI 인근. West동 설비 점검 이력"],
- ["WEST",51000,"Santa Catarina","1~5동","","ASFM 통학 가정 후보"],
- ["Nuevo Sur",44000,"Monterrey","11개 동","","상권 접근 편리. 주말 방문객 많음"],
- ["PRIVANZAS",60000,"San Pedro","Sector 구분","","언덕에 위치한 주택단지"],
- ["MURALLA",65000,"San Pedro","Sector 구분","","프라이빗 주택단지. Costco 인근"],
- ["BAKARA",35000,"Santa María","단독 타워","","산페드로 생활권 인접"],
- ["ORDAZ",41000,"Santa María","Norte / Sur","","4인 가족 후보"],
- ["VERDALBA",49000,"Santa María","1동 / 2동 예정","","공용시설 우수. 면적 확인"],
- ["LIVIN",45000,"Santa María","단독 타워","","게스트 스위트. 건물 노후화 확인"],
- ["AVALON",45000,"Santa María","4개 동 계획","","신축 소형 주택. 1~2인 가구 후보"],
- ["ANIDA",55000,"Santa María","1~2동 / 추가 동 예정","","시설과 주거 공간 우수. 입주 제약 확인"],
- ["MIA",38000,"Santa María","단독 타워","","3인 가족 후보"]
-];
-
-const basePlaces=housing.map((r,i)=>({
- id:"R"+String(i+1).padStart(2,"0"),
- name:r[0],type:"home",legacyPrice:r[1],
- area:r[2],buildings:r[3],amenities:r[4],
- note:r[5],rent_2br:null,rent_3br:null,
- housing_tags:[],source:"base"
-}));
-
-const facilities=[
- ["S01","Colegio Inglés · San Agustín","school"],
- ["S02","San Roberto · San Agustín","school"],
- ["S03","ASFM","school"],
- ["S04","AIM · Valle","school"],
- ["S05","Prepa Tec · Santa Catarina","school"],
- ["S06","Euroamericano · Valle","school"],
- ["F01","Costco · San Pedro","market"],
- ["F02","Oriental Mart · San Pedro","market"],
- ["F03","Hospital Ángeles","hospital"],
- ["F04","Hospital Zambrano","hospital"]
-];
-
-facilities.forEach(([id,name,type])=>{
- basePlaces.push({
-  id,name,type,area:"Monterrey / Nuevo León",
-  note:"",source:"base",housing_tags:[]
- });
-});
-
-const publishedCoordinates={
- R01:{lat:25.6526151,lng:-100.3488636},
- R02:{lat:25.6421454,lng:-100.3219074},
- R03:{lat:25.6467807,lng:-100.3214058},
- R04:{lat:25.6181403,lng:-100.3048761},
- R05:{lat:25.6426097,lng:-100.3227389},
- R06:{lat:25.659351,lng:-100.442403},
- R07:{lat:25.6532298,lng:-100.2758525},
- S01:{lat:25.6356455,lng:-100.3366113},
- S02:{lat:25.6458014,lng:-100.3384674},
- S03:{lat:25.6596991,lng:-100.4463887},
- S04:{lat:25.6504245,lng:-100.3271699},
- S05:{lat:25.6613238,lng:-100.4307032},
- S06:{lat:25.6734019,lng:-100.3703213},
- F01:{lat:25.6396983,lng:-100.317632},
- F02:{lat:25.6355826,lng:-100.3134826},
- F03:{lat:25.6456273,lng:-100.3201532},
- F04:{lat:25.6470588,lng:-100.3344226}
-};
-
-let baseEdits={};
-let communityPlaces=[];
-let places=[];
-let map=null;
-let markers=new Map();
-let selectedId=null;
-let activeCategory="all";
-let selectedHousingTags=new Set();
-let routeMode="origin";
-let routeOrigin=null;
-let routeDestination=null;
-let editingId=null;
-let pendingLocation=null;
-let pickMode=false;
-let saving=false;
-let loading=false;
-
-function esc(v){
- return String(v??"").replace(/[&<>"']/g,c=>({
-  "&":"&amp;","<":"&lt;",">":"&gt;",
-  '"':"&quot;","'":"&#39;"
- })[c]);
-}
-function valid(c){
- if(!c)return false;
- const lat=Number(c.lat),lng=Number(c.lng);
- return Number.isFinite(lat)&&Number.isFinite(lng)&&
- lat>=-90&&lat<=90&&lng>=-180&&lng<=180;
-}
-function tagsOf(p){
- return Array.isArray(p?.housing_tags)
-  ?p.housing_tags.filter(t=>housingTagOptions.includes(t))
-  :[];
-}
-function rebuild(){
- places=[
-  ...basePlaces.map(p=>({
-   ...p,...(baseEdits[p.id]||{}),
-   id:p.id,type:baseEdits[p.id]?.category||p.type,
-   source:"base"
-  })),
-  ...communityPlaces
- ];
-}
-function getPlace(id){return places.find(p=>p.id===id)}
-function coord(p){
- if(!p)return null;
- if(p.source==="community")return {lat:Number(p.lat),lng:Number(p.lng)};
- const e=baseEdits[p.id];
- return valid(e)?{lat:Number(e.lat),lng:Number(e.lng)}
-  :publishedCoordinates[p.id]||null;
-}
-function visible(){
- const q=$("search").value.trim().toLowerCase();
- return places.filter(p=>{
-  if(activeCategory!=="all"&&p.type!==activeCategory)return false;
-  if(activeCategory==="home"&&selectedHousingTags.size){
-   if(![...selectedHousingTags].every(t=>tagsOf(p).includes(t)))return false;
+const categories = {
+  all: {
+    label:"전체",
+    color:"#64748b"
+  },
+  home: {
+    label:"주택",
+    color:"#2878d0"
+  },
+  school: {
+    label:"학교",
+    color:"#e69a22"
+  },
+  market: {
+    label:"마트·쇼핑",
+    color:"#32986c"
+  },
+  hospital: {
+    label:"병원",
+    color:"#d95463"
+  },
+  restaurant: {
+    label:"식당",
+    color:"#9364c7"
   }
-  return [p.name,p.area,p.note,p.displayCode]
-   .join(" ").toLowerCase().includes(q);
- });
+};
+
+const housingTags = [
+  "3인 가족",
+  "4인 가족",
+  "자연",
+  "도심",
+  "넓은 집",
+  "반려견",
+  "아파트",
+  "까사"
+];
+
+const iconPaths = {
+  home:
+    '<path d="M3 10.5 12 3l9 7.5"/>' +
+    '<path d="M5 9.5V21h14V9.5"/>' +
+    '<path d="M9 21v-7h6v7"/>',
+
+  school:
+    '<path d="M3 21V9l9-5 9 5v12"/>' +
+    '<path d="M3 21h18M9 21v-6h6v6"/>' +
+    '<path d="M8 10h1M12 10h1M16 10h1"/>',
+
+  market:
+    '<circle cx="9" cy="20" r="1"/>' +
+    '<circle cx="19" cy="20" r="1"/>' +
+    '<path d="M2 3h3l3 12h12l2-9H6"/>',
+
+  hospital:
+    '<path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>',
+
+  restaurant:
+    '<path d="M4 3v7a3 3 0 0 0 6 0V3"/>' +
+    '<path d="M7 3v18M16 21V3c4 2 5 6 5 10h-5"/>'
+};
+
+/* ===============================
+   2. 상태 관리
+================================ */
+
+let places = [];
+let map = null;
+let markers = new Map();
+
+let selectedId = null;
+let activeCategory = "all";
+let activeTags = [];
+
+let routeMode = "origin";
+let routeOrigin = null;
+let routeDestination = null;
+
+let editingId = null;
+let pendingLocation = null;
+let pickMode = false;
+
+let loading = false;
+let saving = false;
+
+/* ===============================
+   3. 공통 함수
+================================ */
+
+function esc(value){
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[c])
+  );
 }
-function prefix(type){
- return type==="home"?"R":type==="school"?"S":
-  type==="restaurant"?"D":"F";
+
+function validCoord(p){
+  if(!p || p.lat == null || p.lng == null){
+    return false;
+  }
+
+  const lat = Number(p.lat);
+  const lng = Number(p.lng);
+
+  return Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 && lat <= 90 &&
+    lng >= -180 && lng <= 180;
 }
-function assignCodes(rows){
- const next={R:16,S:6,F:4,D:0};
- return [...rows].sort((a,b)=>
-  String(a.created_at||"").localeCompare(String(b.created_at||""))||
-  String(a.id).localeCompare(String(b.id))
- ).map(r=>{
-  const k=prefix(r.category);
-  next[k]++;
-  return {...r,displayCode:k+String(next[k]).padStart(2,"0")};
- });
+
+function getPlace(id){
+  return places.find(p => p.id === id);
 }
+
+function money(value){
+  if(value == null || value === ""){
+    return "미등록";
+  }
+
+  return "$" + Number(value).toLocaleString() + " MXN";
+}
+
+function iconSVG(type,size=24){
+  return `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="${size}"
+      height="${size}"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#fff"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      ${iconPaths[type] || iconPaths.home}
+    </svg>
+  `;
+}
+
+function setStatus(text,error=false){
+  const el = $("syncStatus");
+  el.textContent = text;
+  el.className = "status" + (error ? " error" : "");
+}
+
+function makeId(){
+  if(window.crypto && crypto.randomUUID){
+    return "C-" + crypto.randomUUID();
+  }
+
+  throw new Error(
+    "안전한 장소 ID를 생성할 수 없습니다. HTTPS에서 다시 시도하세요."
+  );
+}
+
+/* ===============================
+   4. Supabase 데이터 조회
+================================ */
 
 async function loadData(){
- if(!db){
-  $("syncStatus").className="status error";
-  $("syncStatus").textContent="Supabase 연결 실패";
-  return;
- }
- if(loading)return;
- loading=true;
- try{
-  const [cr,er,dr]=await Promise.all([
-   db.from("community_places").select("*")
-    .order("created_at",{ascending:true}).limit(1000),
-   db.from("base_place_edits").select("*"),
-   db.from("community_place_details").select("*").limit(1000)
-  ]);
-  if(cr.error)throw cr.error;
-  if(er.error)console.warn(er.error);
-  if(dr.error)console.warn(dr.error);
+  if(loading || saving) return;
 
-  baseEdits={};
-  for(const r of er.data||[]){
-   if(basePlaces.some(p=>p.id===r.place_id)){
-    baseEdits[r.place_id]=r;
-   }
+  loading = true;
+  $("refreshBtn").disabled = true;
+
+  setStatus("Supabase 장소 정보를 불러오는 중...");
+
+  try{
+    const {data,error} = await db
+      .from("map_places")
+      .select(
+        "id,name,category,area,lat,lng,query," +
+        "rent_2br,rent_3br,buildings,amenities," +
+        "note,housing_tags,source,created_at"
+      )
+      .order("created_at",{ascending:true})
+      .limit(1000);
+
+    if(error) throw error;
+
+    places = (data || [])
+      .filter(p => categories[p.category] &&
+        p.category !== "all")
+      .map(p => ({
+        ...p,
+        type:p.category,
+        housing_tags:Array.isArray(p.housing_tags)
+          ? p.housing_tags
+          : []
+      }));
+
+    if(selectedId && !getPlace(selectedId)){
+      selectedId = null;
+    }
+
+    if(routeOrigin && !getPlace(routeOrigin)){
+      routeOrigin = null;
+    }
+
+    if(routeDestination && !getPlace(routeDestination)){
+      routeDestination = null;
+    }
+
+    render();
+
+    setStatus(
+      "✓ Supabase 연결됨 · 전체 장소 " +
+      places.length + "개"
+    );
+
+  }catch(error){
+    console.error(error);
+
+    setStatus(
+      "데이터 조회 오류: " +
+      (error.message || "연결 확인 필요"),
+      true
+    );
+
+  }finally{
+    loading = false;
+    $("refreshBtn").disabled = false;
   }
+}
 
-  const detailMap=new Map(
-   (dr.data||[]).map(r=>[r.place_id,r])
-  );
+/*
+  자동 조회 최적화:
+  - 최초 접속 시 1회
+  - 저장 직후 1회
+  - 수동 새로고침 시 1회
 
-  communityPlaces=assignCodes(
-   (cr.data||[]).filter(r=>categories[r.category]&&
-    r.category!=="all"&&valid(r))
-  ).map(r=>{
-   const d=detailMap.get(r.id)||{};
-   return {
-    id:"C"+r.id,dbId:r.id,
-    displayCode:r.displayCode,
-    name:r.name,type:r.category,
-    area:r.area||"",note:r.note||"",
-    legacyPrice:r.price==null?null:Number(r.price),
-    lat:Number(r.lat),lng:Number(r.lng),
-    buildings:d.buildings||"",
-    amenities:d.amenities||"",
-    rent_2br:d.rent_2br??null,
-    rent_3br:d.rent_3br??null,
-    housing_tags:d.housing_tags||[],
-    source:"community"
-   };
+  20초 setInterval 사용하지 않음.
+*/
+
+$("refreshBtn").onclick = loadData;
+
+/* ===============================
+   5. 검색 및 필터
+================================ */
+
+function visiblePlaces(){
+  const q = $("search").value
+    .trim()
+    .toLowerCase();
+
+  return places.filter(p => {
+    if(
+      activeCategory !== "all" &&
+      p.type !== activeCategory
+    ){
+      return false;
+    }
+
+    const searchText = [
+      p.name,
+      p.area,
+      p.note,
+      p.buildings,
+      p.amenities,
+      ...(p.housing_tags || [])
+    ].join(" ").toLowerCase();
+
+    if(q && !searchText.includes(q)){
+      return false;
+    }
+
+    if(activeCategory === "home" && activeTags.length){
+      return activeTags.every(tag =>
+        (p.housing_tags || []).includes(tag)
+      );
+    }
+
+    return true;
   });
-
-  rebuild();
-  if(selectedId&&!getPlace(selectedId))selectedId=null;
-  if(routeOrigin&&!getPlace(routeOrigin))routeOrigin=null;
-  if(routeDestination&&!getPlace(routeDestination))routeDestination=null;
-  render();
-
-  $("syncStatus").className="status";
-  $("syncStatus").textContent=
-   "✓ 공용 지도 연결됨 · 추가 장소 "+communityPlaces.length+"개";
-
-  if(er.error||dr.error){
-   $("syncStatus").textContent+=" · 편집용 SQL 설정 확인 필요";
-  }
- }catch(e){
-  console.error(e);
-  $("syncStatus").className="status error";
-  $("syncStatus").textContent="데이터 연결 오류: "+e.message;
- }finally{loading=false}
 }
 
 function renderFilters(){
- $("filters").innerHTML=Object.entries(categories).map(([k,c])=>
-  `<button class="chip ${activeCategory===k?"active":""}"
-  data-category="${k}">${c.label}</button>`
- ).join("");
- document.querySelectorAll("[data-category]").forEach(b=>{
-  b.onclick=()=>{
-   activeCategory=b.dataset.category;
-   render();
-  };
- });
-}
-function renderHousingFilter(){
- $("housingFilter").classList.toggle("hidden",activeCategory!=="home");
- $("housingTags").innerHTML=housingTagOptions.map(t=>
-  `<button class="tag ${selectedHousingTags.has(t)?"active":""}"
-  data-tag="${esc(t)}">${esc(t)}</button>`
- ).join("");
- document.querySelectorAll("[data-tag]").forEach(b=>{
-  b.onclick=()=>{
-   const t=b.dataset.tag;
-   if(selectedHousingTags.has(t))selectedHousingTags.delete(t);
-   else selectedHousingTags.add(t);
-   render();
-  };
- });
-}
-$("clearTags").onclick=()=>{
- selectedHousingTags.clear();
- render();
-};
-function renderLegend(){
- $("legend").innerHTML=Object.entries(categories)
- .filter(([k])=>k!=="all")
- .map(([k,c])=>`<span><i class="dot"
- style="background:${c.color}"></i>${c.label}</span>`).join("");
-}
-function renderList(){
- const arr=visible();
- $("counter").textContent=arr.length+"개 장소 · 지도 표시 "+
-  arr.filter(p=>valid(coord(p))).length+"개";
+  $("filters").innerHTML =
+    Object.entries(categories).map(([key,value]) => `
+      <button
+        class="chip ${activeCategory === key ? "active" : ""}"
+        data-category="${key}"
+      >
+        ${value.label}
+      </button>
+    `).join("");
 
- $("list").innerHTML=arr.map(p=>{
-  const t=p.type==="home"?tagsOf(p):[];
-  return `<button class="item ${selectedId===p.id?"active":""}"
-  data-place="${esc(p.id)}">
-  <span class="pin" style="background:${categories[p.type].color}">
-  ${pictogram(p.type)}</span>
-  <span>
-   <strong>${esc(p.name)}</strong>
-   <small>${esc(p.displayCode||p.id)} · ${categories[p.type].label}</small>
-   ${t.length?`<span class="item-tags">${t.map(x=>
-    `<span>${esc(x)}</span>`).join("")}</span>`:""}
-  </span></button>`;
- }).join("")||'<p class="muted">검색 결과가 없습니다.</p>';
+  document.querySelectorAll("[data-category]")
+    .forEach(button => {
+      button.onclick = () => {
+        activeCategory = button.dataset.category;
 
- document.querySelectorAll("[data-place]").forEach(b=>{
-  b.onclick=()=>selectPlace(b.dataset.place);
- });
-}
-function markerIcon(p){
- const color=categories[p.type].color;
- const svg=`<svg xmlns="http://www.w3.org/2000/svg"
- width="52" height="52" viewBox="0 0 52 52">
- <circle cx="26" cy="26" r="22" fill="${color}"
- stroke="white" stroke-width="${selectedId===p.id?5:3}"/>
- <g transform="translate(14 14)">${pictogram(p.type)}</g>
- </svg>`;
- return {
-  url:"data:image/svg+xml;charset=UTF-8,"+encodeURIComponent(svg),
-  scaledSize:new google.maps.Size(46,46),
-  anchor:new google.maps.Point(23,23)
- };
-}
-function syncMarkers(){
- if(!map)return;
- markers.forEach(m=>m.setMap(null));
- markers.clear();
- for(const p of visible()){
-  const c=coord(p);
-  if(!valid(c))continue;
-  const m=new google.maps.Marker({
-   map,position:{lat:Number(c.lat),lng:Number(c.lng)},
-   title:p.name,icon:markerIcon(p),
-   zIndex:selectedId===p.id?100:1
-  });
-  m.addListener("click",()=>{
-   if(pickMode){
-    handleMapPick({
-     lat:()=>Number(c.lat),
-     lng:()=>Number(c.lng)
+        if(activeCategory !== "home"){
+          activeTags = [];
+        }
+
+        render();
+      };
     });
-   }else selectPlace(p.id);
+
+  $("tagSection").classList.toggle(
+    "hidden",
+    activeCategory !== "home"
+  );
+
+  $("housingFilters").innerHTML =
+    housingTags.map(tag => `
+      <button
+        class="tag ${activeTags.includes(tag) ? "active" : ""}"
+        data-tag="${esc(tag)}"
+      >
+        ${esc(tag)}
+      </button>
+    `).join("");
+
+  document.querySelectorAll("[data-tag]")
+    .forEach(button => {
+      button.onclick = () => {
+        const tag = button.dataset.tag;
+
+        activeTags = activeTags.includes(tag)
+          ? activeTags.filter(x => x !== tag)
+          : [...activeTags,tag];
+
+        render();
+      };
+    });
+}
+
+$("clearTags").onclick = () => {
+  activeTags = [];
+  render();
+};
+
+function renderLegend(){
+  $("legend").innerHTML =
+    Object.entries(categories)
+      .filter(([key]) => key !== "all")
+      .map(([key,value]) => `
+        <span>
+          <i
+            class="dot"
+            style="background:${value.color}"
+          ></i>
+          ${value.label}
+        </span>
+      `).join("");
+}
+
+/* ===============================
+   6. 장소 목록
+================================ */
+
+function renderList(){
+  const rows = visiblePlaces();
+
+  $("counter").textContent =
+    rows.length + "개 장소 · 지도 표시 " +
+    rows.filter(validCoord).length + "개";
+
+  $("list").innerHTML = rows.map(p => `
+    <button
+      class="item ${selectedId === p.id ? "active" : ""}"
+      data-place="${esc(p.id)}"
+    >
+      <span
+        class="pin"
+        style="background:${categories[p.type].color}"
+      >
+        ${iconSVG(p.type,23)}
+      </span>
+
+      <span>
+        <strong>${esc(p.name)}</strong>
+        <small>
+          ${esc(p.id.startsWith("C-") ? "추가 장소" : p.id)}
+          · ${categories[p.type].label}
+          ${routeOrigin === p.id ? " · 🔵 출발" : ""}
+          ${routeDestination === p.id ? " · 🟢 도착" : ""}
+        </small>
+      </span>
+    </button>
+  `).join("") ||
+    '<p class="muted">검색 결과가 없습니다.</p>';
+
+  document.querySelectorAll("[data-place]")
+    .forEach(button => {
+      button.onclick = () =>
+        selectPlace(button.dataset.place);
+    });
+}
+
+/* ===============================
+   7. Google Maps 마커
+================================ */
+
+function markerIcon(p){
+  const color = categories[p.type].color;
+
+  const ring =
+    routeOrigin === p.id
+      ? "#2878d0"
+      : routeDestination === p.id
+        ? "#32986c"
+        : "#ffffff";
+
+  const svg = `
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="52"
+      height="52"
+      viewBox="0 0 52 52"
+    >
+      <circle
+        cx="26"
+        cy="26"
+        r="21"
+        fill="${color}"
+        stroke="${ring}"
+        stroke-width="4"
+      />
+      <g
+        transform="translate(14 14)"
+        fill="none"
+        stroke="white"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        ${iconPaths[p.type] || iconPaths.home}
+      </g>
+    </svg>
+  `;
+
+  return {
+    url:"data:image/svg+xml;charset=UTF-8," +
+      encodeURIComponent(svg),
+    scaledSize:new google.maps.Size(46,46),
+    anchor:new google.maps.Point(23,23)
+  };
+}
+
+function syncMarkers(){
+  if(!map) return;
+
+  markers.forEach(marker => marker.setMap(null));
+  markers.clear();
+
+  visiblePlaces().forEach(p => {
+    if(!validCoord(p)) return;
+
+    const marker = new google.maps.Marker({
+      map,
+      position:{
+        lat:Number(p.lat),
+        lng:Number(p.lng)
+      },
+      title:p.name,
+      icon:markerIcon(p),
+      zIndex:
+        routeOrigin === p.id ||
+        routeDestination === p.id
+          ? 100
+          : 1
+    });
+
+    marker.addListener("click",() => {
+      if(pickMode){
+        handleMapPick({
+          lat:() => Number(p.lat),
+          lng:() => Number(p.lng)
+        });
+      }else{
+        selectPlace(p.id);
+      }
+    });
+
+    markers.set(p.id,marker);
   });
-  markers.set(p.id,m);
- }
 }
-function money(v){
- return v===null||v===undefined||v===""
-  ?"미등록":"$"+Number(v).toLocaleString()+" MXN";
-}
-function mapURL(p){
- const c=coord(p);
- const q=valid(c)?c.lat+","+c.lng:
-  p.name+" "+(p.area||"")+" Nuevo León México";
- return "https://www.google.com/maps/search/?api=1&query="+
-  encodeURIComponent(q);
-}
-function renderDetail(){
- const p=getPlace(selectedId);
- $("categoryBanner").textContent=
-  p?categories[p.type].label:"장소를 선택해 주세요";
- $("editRound").classList.toggle("hidden",!p);
- if(!p){
-  $("detailContent").innerHTML=
-   '<h2>장소를 선택하세요</h2><p class="muted">선택한 장소의 상세정보가 여기에 표시됩니다.</p>';
-  return;
- }
-
- const isHome=p.type==="home";
- const tags=tagsOf(p);
-
- $("detailContent").innerHTML=`
- <h2>${esc(p.name)}</h2>
- <p class="muted">${esc(p.area||"지역 정보 없음")} ·
- ${esc(p.displayCode||p.id)}</p>
-
- ${isHome?`
- <div class="facts">
-  <div class="fact">
-   <small>평균 임대료 (방 2개)</small>
-   <b>${money(p.rent_2br)}</b>
-  </div>
-  <div class="fact">
-   <small>평균 임대료 (방 3개)</small>
-   <b>${money(p.rent_3br)}</b>
-  </div>
- </div>
- ${tags.length?`
- <h3>주택 추천 조건</h3>
- <div class="detail-tags">
- ${tags.map(t=>`<span>${esc(t)}</span>`).join("")}
- </div>`:`
- <p class="muted">추천 필터가 아직 등록되지 않았습니다. 연필 버튼에서 추가할 수 있습니다.</p>`}
- `:""}
-
- ${p.buildings?`<h3>단지 구성</h3>
- <div class="card">${esc(p.buildings)}</div>`:""}
-
- ${p.amenities?`<h3>편의시설</h3>
- <div class="card">${esc(p.amenities)}</div>`:""}
-
- <h3>특징 및 참고사항</h3>
- <div class="card">${esc(p.note||
- "등록된 설명이 없습니다. 연필 버튼으로 추가할 수 있습니다.")}</div>
-
- <p class="muted">${valid(coord(p))?
- "📍 지도 위치 등록 완료":"📍 지도 위치 미등록"}</p>
- <div class="actions">
- <a class="btn secondary" href="${mapURL(p)}"
- target="_blank" rel="noopener noreferrer">
- Google Maps 위치 확인</a>
- </div>`;
-}
-function selectPlace(id){
- const p=getPlace(id);
- if(!p)return;
- selectedId=id;
- if(routeMode==="origin"){
-  routeOrigin=id;
-  if(routeDestination===id)routeDestination=null;
-  routeMode="destination";
- }else if(routeMode==="destination"&&routeOrigin!==id){
-  routeDestination=id;
-  routeMode=null;
- }
- render();
- const c=coord(p);
- if(map&&valid(c)){
-  map.panTo({lat:Number(c.lat),lng:Number(c.lng)});
-  map.setZoom(15);
- }
- $("mapnote").textContent=p.name+
-  (valid(c)?" · 지도 위치":" · 좌표 미등록");
-}
-function renderRoute(){
- const a=getPlace(routeOrigin),b=getPlace(routeDestination);
- $("originName").textContent=a?a.name:"선택해 주세요";
- $("destinationName").textContent=b?b.name:"선택해 주세요";
- $("originBox").classList.toggle("active",routeMode==="origin");
- $("destinationBox").classList.toggle("active",routeMode==="destination");
- $("routeHint").textContent=routeMode==="origin"
-  ?"🔵 출발지 선택 중 · 장소를 누르세요."
-  :routeMode==="destination"
-  ?"🟢 도착지 선택 중 · 다른 장소를 누르세요."
-  :a&&b?"선택 완료! 길찾기를 눌러주세요."
-  :"출발지 또는 도착지를 선택하세요.";
- $("routeBtn").disabled=!a||!b||a.id===b.id;
-}
-$("originBox").onclick=()=>{routeMode="origin";renderRoute()};
-$("destinationBox").onclick=()=>{routeMode="destination";renderRoute()};
-$("swapBtn").onclick=()=>{
- [routeOrigin,routeDestination]=[routeDestination,routeOrigin];
- render();
-};
-$("resetRoute").onclick=()=>{
- routeOrigin=null;routeDestination=null;routeMode="origin";render();
-};
-$("routeBtn").onclick=()=>{
- const a=getPlace(routeOrigin),b=getPlace(routeDestination);
- if(!a||!b||a.id===b.id)return;
- const point=p=>{
-  const c=coord(p);
-  return valid(c)?c.lat+","+c.lng:
-   p.name+" "+(p.area||"")+" Nuevo León México";
- };
- window.open(
-  "https://www.google.com/maps/dir/?api=1"+
-  "&origin="+encodeURIComponent(point(a))+
-  "&destination="+encodeURIComponent(point(b))+
-  "&travelmode=driving",
-  "_blank","noopener,noreferrer"
- );
-};
 
 function initMap(){
- map=new google.maps.Map($("map"),{
-  center:{lat:25.65,lng:-100.345},
-  zoom:11,mapTypeControl:false,
-  streetViewControl:false,fullscreenControl:true
- });
- syncMarkers();
- map.addListener("click",e=>{
-  if(pickMode)handleMapPick(e.latLng);
- });
+  map = new google.maps.Map($("map"),{
+    center:{
+      lat:25.65,
+      lng:-100.345
+    },
+    zoom:11,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:true
+  });
+
+  map.addListener("click",event => {
+    if(pickMode){
+      handleMapPick(event.latLng);
+    }
+  });
+
+  syncMarkers();
 }
-window.initMap=initMap;
-window.gm_authFailure=()=>{
- $("mapnote").textContent=
-  "Google Maps API 키 또는 허용 도메인을 확인하세요.";
+
+window.initMap = initMap;
+
+window.gm_authFailure = () => {
+  $("mapnote").textContent =
+    "Google Maps API 키 또는 허용 도메인을 확인하세요.";
 };
 
-function renderTagPicker(selected=[]){
- $("tagPicker").innerHTML=housingTagOptions.map(t=>`
- <label class="${selected.includes(t)?"checked":""}">
- <input type="checkbox" value="${esc(t)}"
- ${selected.includes(t)?"checked":""}>
- ${esc(t)}
- </label>`).join("");
- $("tagPicker").querySelectorAll("input").forEach(c=>{
-  c.onchange=()=>{
-   c.parentElement.classList.toggle("checked",c.checked);
-  };
- });
+/* ===============================
+   8. 장소 상세정보
+================================ */
+
+function mapSearchURL(p){
+  const query = validCoord(p)
+    ? p.lat + "," + p.lng
+    : p.query ||
+      p.name + " " + (p.area || "") +
+      " Nuevo León México";
+
+  return "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(query);
 }
-function selectedModalTags(){
- return [...$("tagPicker").querySelectorAll("input:checked")]
-  .map(c=>c.value);
+
+function renderDetail(){
+  const p = getPlace(selectedId);
+
+  $("categoryBanner").textContent = p
+    ? categories[p.type].label
+    : "장소를 선택해 주세요";
+
+  $("editRound").classList.toggle("hidden",!p);
+
+  if(!p){
+    $("detailContent").innerHTML = `
+      <h2>장소를 선택하세요</h2>
+      <p class="muted">
+        선택한 장소의 상세정보가 여기에 표시됩니다.
+      </p>
+    `;
+    return;
+  }
+
+  let rentHTML = "";
+
+  if(p.type === "home"){
+    rentHTML = `
+      <div class="facts">
+        <div class="fact">
+          <small>평균 임대료 · 방 2개</small>
+          <b>${money(p.rent_2br)}</b>
+        </div>
+        <div class="fact">
+          <small>평균 임대료 · 방 3개</small>
+          <b>${money(p.rent_3br)}</b>
+        </div>
+      </div>
+    `;
+  }
+
+  const tagsHTML =
+    p.type === "home" && p.housing_tags.length
+      ? `
+        <h3>주택 추천 조건</h3>
+        <div class="tags">
+          ${p.housing_tags.map(tag =>
+            `<span class="tag active">${esc(tag)}</span>`
+          ).join("")}
+        </div>
+      `
+      : "";
+
+  $("detailContent").innerHTML = `
+    <h2>${esc(p.name)}</h2>
+
+    <p class="muted">
+      ${esc(p.area || "지역 정보 없음")}
+      · ${esc(p.id.startsWith("C-") ? "추가 장소" : p.id)}
+    </p>
+
+    ${rentHTML}
+
+    ${tagsHTML}
+
+    ${p.buildings ? `
+      <h3>단지 구성 / 주택 유형</h3>
+      <div class="card">${esc(p.buildings)}</div>
+    ` : ""}
+
+    ${p.amenities ? `
+      <h3>편의시설</h3>
+      <div class="card">${esc(p.amenities)}</div>
+    ` : ""}
+
+    <h3>특징 및 참고사항</h3>
+    <div class="card">
+      ${esc(p.note || "등록된 설명이 없습니다.")}
+    </div>
+
+    <p class="muted">
+      ${validCoord(p)
+        ? "📍 지도 위치 등록 완료"
+        : "📍 지도 위치 미등록"}
+    </p>
+
+    <a
+      class="btn secondary"
+      style="display:inline-block;text-decoration:none"
+      href="${mapSearchURL(p)}"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      Google Maps 위치 확인
+    </a>
+  `;
 }
-function openModal(){
- $("modalOverlay").classList.remove("hidden");
- $("modalStatus").textContent="";
+
+/* ===============================
+   9. 장소 선택 및 길찾기
+================================ */
+
+function selectPlace(id){
+  const p = getPlace(id);
+  if(!p) return;
+
+  selectedId = id;
+
+  if(routeMode === "origin"){
+    routeOrigin = id;
+
+    if(routeDestination === id){
+      routeDestination = null;
+    }
+
+    routeMode = "destination";
+
+  }else if(
+    routeMode === "destination" &&
+    routeOrigin !== id
+  ){
+    routeDestination = id;
+    routeMode = null;
+  }
+
+  render();
+
+  if(map && validCoord(p)){
+    map.panTo({
+      lat:Number(p.lat),
+      lng:Number(p.lng)
+    });
+
+    map.setZoom(15);
+  }
+
+  $("mapnote").textContent =
+    p.name +
+    (validCoord(p)
+      ? " · 지도 위치"
+      : " · 좌표 미등록");
 }
-function closeModal(){
- $("modalOverlay").classList.add("hidden");
+
+function renderRoute(){
+  const a = getPlace(routeOrigin);
+  const b = getPlace(routeDestination);
+
+  $("originName").textContent =
+    a ? a.name : "선택해 주세요";
+
+  $("destinationName").textContent =
+    b ? b.name : "선택해 주세요";
+
+  $("originBox").classList.toggle(
+    "active",
+    routeMode === "origin"
+  );
+
+  $("destinationBox").classList.toggle(
+    "active",
+    routeMode === "destination"
+  );
+
+  $("routeHint").textContent =
+    routeMode === "origin"
+      ? "🔵 출발지 선택 중 · 장소를 누르세요."
+      : routeMode === "destination"
+        ? "🟢 도착지 선택 중 · 다른 장소를 누르세요."
+        : a && b
+          ? "선택 완료! 길찾기를 눌러주세요."
+          : "출발지 또는 도착지를 선택하세요.";
+
+  $("routeBtn").disabled =
+    !a || !b || a.id === b.id;
 }
-function setArea(value){
- const s=$("newArea");
- s.querySelector('[data-custom="true"]')?.remove();
- if(value&&![...s.options].some(o=>o.value===value)){
-  const o=document.createElement("option");
-  o.value=value;o.textContent=value+" (기존 지역)";
-  o.dataset.custom="true";s.appendChild(o);
- }
- s.value=value||"";
-}
-function updateHousingFields(){
- $("housingFields").classList.toggle(
-  "hidden",$("newCategory").value!=="home"
- );
-}
-function openAdd(){
- editingId=null;pendingLocation=null;
- $("modalTitle").textContent="📍 새 장소 추가";
- $("modalIntro").textContent="등록한 장소는 모든 방문자에게 공유됩니다.";
- $("newCategory").value="home";
- $("newName").value="";
- setArea("");
- $("rent2").value="";
- $("rent3").value="";
- $("newBuildings").value="";
- $("newAmenities").value="";
- $("newNote").value="";
- renderTagPicker([]);
- $("locationStatus").textContent="지도에서 위치를 선택해 주세요.";
- updateHousingFields();
- openModal();
-}
-function openEdit(){
- const p=getPlace(selectedId);
- if(!p)return;
- if(!confirm("이 장소를 편집하시겠습니까?\n수정 내용은 모든 방문자에게 공유됩니다."))return;
- editingId=p.id;
- const c=coord(p);
- pendingLocation=valid(c)
-  ?{lat:Number(c.lat),lng:Number(c.lng)}:null;
- $("modalTitle").textContent="✏️ 장소 정보 편집";
- $("modalIntro").textContent="수정한 내용은 모든 방문자에게 공유됩니다.";
- $("newCategory").value=p.type;
- $("newName").value=p.name;
- setArea(p.area);
- $("rent2").value=p.rent_2br??"";
- $("rent3").value=p.rent_3br??"";
- $("newBuildings").value=p.buildings||"";
- $("newAmenities").value=p.amenities||"";
- $("newNote").value=p.note||"";
- renderTagPicker(tagsOf(p));
- $("locationStatus").textContent=pendingLocation
-  ?"✓ 기존 지도 위치가 선택되어 있습니다. 필요하면 다시 지정하세요."
-  :"지도에서 위치를 선택해 주세요.";
- updateHousingFields();
- openModal();
-}
-$("addFloating").onclick=openAdd;
-$("editRound").onclick=openEdit;
-$("closeModal").onclick=closeModal;
-$("cancelModal").onclick=closeModal;
-$("modalOverlay").onclick=e=>{
- if(e.target===$("modalOverlay"))closeModal();
+
+$("originBox").onclick = () => {
+  routeMode = "origin";
+  renderRoute();
 };
-$("newCategory").onchange=updateHousingFields;
+
+$("destinationBox").onclick = () => {
+  routeMode = "destination";
+  renderRoute();
+};
+
+$("swapBtn").onclick = () => {
+  [routeOrigin,routeDestination] =
+    [routeDestination,routeOrigin];
+
+  render();
+};
+
+$("resetRoute").onclick = () => {
+  routeOrigin = null;
+  routeDestination = null;
+  routeMode = "origin";
+  render();
+};
+
+$("routeBtn").onclick = () => {
+  const a = getPlace(routeOrigin);
+  const b = getPlace(routeDestination);
+
+  if(!a || !b || a.id === b.id) return;
+
+  const point = p => validCoord(p)
+    ? p.lat + "," + p.lng
+    : p.query ||
+      p.name + " " + (p.area || "") +
+      " Nuevo León México";
+
+  const url =
+    "https://www.google.com/maps/dir/?api=1" +
+    "&origin=" + encodeURIComponent(point(a)) +
+    "&destination=" + encodeURIComponent(point(b)) +
+    "&travelmode=driving";
+
+  window.open(url,"_blank","noopener,noreferrer");
+};
+
+/* ===============================
+   10. 추가 및 편집 창
+================================ */
+
+function openModal(){
+  $("modalOverlay").classList.remove("hidden");
+  $("modalStatus").textContent = "";
+}
+
+function closeModal(){
+  $("modalOverlay").classList.add("hidden");
+}
+
+function setArea(value){
+  const select = $("newArea");
+
+  if(
+    value &&
+    !Array.from(select.options).some(
+      option => option.value === value
+    )
+  ){
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value + " (기존 지역)";
+    select.appendChild(option);
+  }
+
+  select.value = value || "";
+}
+
+function updateHomeFields(){
+  $("homeFields").classList.toggle(
+    "hidden",
+    $("newCategory").value !== "home"
+  );
+}
+
+function renderEditTags(selected=[]){
+  $("editHousingTags").innerHTML =
+    housingTags.map(tag => `
+      <label
+        class="tag"
+        style="display:inline-flex;align-items:center;gap:5px"
+      >
+        <input
+          type="checkbox"
+          value="${esc(tag)}"
+          ${selected.includes(tag) ? "checked" : ""}
+        >
+        ${esc(tag)}
+      </label>
+    `).join("");
+}
+
+function openAdd(){
+  editingId = null;
+  pendingLocation = null;
+
+  $("modalTitle").textContent = "📍 새 장소 추가";
+  $("modalIntro").textContent =
+    "등록한 장소는 모든 방문자에게 공유됩니다.";
+
+  $("newCategory").value = "home";
+  $("newName").value = "";
+  setArea("");
+
+  $("newRent2").value = "";
+  $("newRent3").value = "";
+  $("newBuildings").value = "";
+  $("newAmenities").value = "";
+  $("newNote").value = "";
+
+  renderEditTags([]);
+  updateHomeFields();
+
+  $("locationStatus").textContent =
+    "지도에서 위치를 선택해 주세요.";
+
+  openModal();
+}
+
+function openEdit(){
+  const p = getPlace(selectedId);
+  if(!p) return;
+
+  if(!confirm(
+    "이 장소를 편집하시겠습니까?\n" +
+    "수정 내용은 모든 방문자에게 공유됩니다."
+  )){
+    return;
+  }
+
+  editingId = p.id;
+
+  pendingLocation = validCoord(p)
+    ? {
+        lat:Number(p.lat),
+        lng:Number(p.lng)
+      }
+    : null;
+
+  $("modalTitle").textContent =
+    "✏️ 장소 정보 편집";
+
+  $("modalIntro").textContent =
+    "수정한 내용은 모든 방문자에게 공유됩니다.";
+
+  $("newCategory").value = p.type;
+  $("newName").value = p.name;
+  setArea(p.area);
+
+  $("newRent2").value = p.rent_2br ?? "";
+  $("newRent3").value = p.rent_3br ?? "";
+
+  $("newBuildings").value = p.buildings || "";
+  $("newAmenities").value = p.amenities || "";
+  $("newNote").value = p.note || "";
+
+  renderEditTags(p.housing_tags || []);
+  updateHomeFields();
+
+  $("locationStatus").textContent =
+    pendingLocation
+      ? "✓ 기존 지도 위치가 선택되어 있습니다."
+      : "지도에서 위치를 선택해 주세요.";
+
+  openModal();
+}
+
+$("addFloating").onclick = openAdd;
+$("editRound").onclick = openEdit;
+$("closeModal").onclick = closeModal;
+$("cancelModal").onclick = closeModal;
+
+$("modalOverlay").onclick = event => {
+  if(event.target === $("modalOverlay")){
+    closeModal();
+  }
+};
+
+$("newCategory").onchange = updateHomeFields;
+
+/* ===============================
+   11. 지도에서 위치 선택
+================================ */
 
 function startPick(){
- if(!map){alert("지도가 아직 준비되지 않았습니다.");return}
- pickMode=true;
- closeModal();
- $("pickBanner").classList.remove("hidden");
- $("mapnote").textContent="위치 선택 중 · 지도에서 정확한 지점을 탭하세요.";
- if(window.innerWidth<=1000){
-  $("map").scrollIntoView({behavior:"smooth",block:"center"});
- }
+  if(!map){
+    alert("지도가 아직 준비되지 않았습니다.");
+    return;
+  }
+
+  pickMode = true;
+  closeModal();
+
+  $("pickBanner").classList.remove("hidden");
+
+  $("mapnote").textContent =
+    "위치 선택 중 · 지도에서 정확한 지점을 누르세요.";
+
+  if(window.innerWidth <= 1000){
+    $("map").scrollIntoView({
+      behavior:"smooth",
+      block:"center"
+    });
+  }
 }
+
 function handleMapPick(point){
- if(!pickMode)return;
- pendingLocation={
-  lat:Number(point.lat().toFixed(7)),
-  lng:Number(point.lng().toFixed(7))
- };
- pickMode=false;
- $("pickBanner").classList.add("hidden");
- $("locationStatus").textContent="✓ 지도 위치 선택 완료";
- openModal();
+  if(!pickMode) return;
+
+  pendingLocation = {
+    lat:Number(point.lat().toFixed(7)),
+    lng:Number(point.lng().toFixed(7))
+  };
+
+  pickMode = false;
+
+  $("pickBanner").classList.add("hidden");
+
+  $("locationStatus").textContent =
+    "✓ 지도 위치 선택 완료.";
+
+  openModal();
 }
-$("pickNew").onclick=startPick;
-$("cancelPick").onclick=()=>{
- pickMode=false;
- $("pickBanner").classList.add("hidden");
- openModal();
+
+$("pickNew").onclick = startPick;
+
+$("cancelPick").onclick = () => {
+  pickMode = false;
+  $("pickBanner").classList.add("hidden");
+  openModal();
 };
 
-/* 장소 저장: 기존 장소와 새 장소 모두 공용 저장 */
-$("saveNew").onclick=async()=>{
- if(saving)return;
- if(!db){
-  $("modalStatus").textContent="Supabase 연결을 확인하세요.";
-  return;
- }
+/* ===============================
+   12. Supabase 저장
+================================ */
 
- const category=$("newCategory").value;
- const name=$("newName").value.trim();
- const area=$("newArea").value;
- const note=$("newNote").value.trim();
- const buildings=$("newBuildings").value.trim();
- const amenities=$("newAmenities").value.trim();
- const isHome=category==="home";
- const rent2Text=$("rent2").value.trim();
- const rent3Text=$("rent3").value.trim();
- const rent2=isHome&&rent2Text!==""?Number(rent2Text):null;
- const rent3=isHome&&rent3Text!==""?Number(rent3Text):null;
- const housingTags=isHome?selectedModalTags():[];
+$("saveNew").onclick = async () => {
+  if(saving) return;
 
- if(name.length<2||name.length>100){
-  alert("장소 이름을 2~100자로 입력하세요.");return;
- }
- if(!area){alert("지역을 선택하세요.");return}
- if(!valid(pendingLocation)){
-  alert("지도에서 위치를 먼저 선택하세요.");return;
- }
- if([rent2,rent3].some(v=>v!==null&&
-  (!Number.isFinite(v)||v<0||v>10000000))){
-  alert("임대료를 확인하세요.");return;
- }
+  const category = $("newCategory").value;
+  const name = $("newName").value.trim();
+  const area = $("newArea").value;
+  const note = $("newNote").value.trim();
 
- const payload={
-  name,category,area,note,
-  lat:pendingLocation.lat,
-  lng:pendingLocation.lng
- };
- const editing=editingId?getPlace(editingId):null;
+  const buildings =
+    category === "home"
+      ? $("newBuildings").value.trim()
+      : null;
 
- if(!editing){
-  const duplicate=places.some(p=>{
-   const c=coord(p);
-   return p.name.trim().toLowerCase()===name.toLowerCase()&&
-    valid(c)&&
-    Math.abs(Number(c.lat)-payload.lat)<0.0002&&
-    Math.abs(Number(c.lng)-payload.lng)<0.0002;
-  });
-  if(duplicate){
-   alert("같은 이름과 위치의 장소가 이미 있습니다.");return;
+  const amenities =
+    category === "home"
+      ? $("newAmenities").value.trim()
+      : null;
+
+  const rent2Text = $("newRent2").value.trim();
+  const rent3Text = $("newRent3").value.trim();
+
+  const rent2 =
+    category === "home" && rent2Text !== ""
+      ? Number(rent2Text)
+      : null;
+
+  const rent3 =
+    category === "home" && rent3Text !== ""
+      ? Number(rent3Text)
+      : null;
+
+  const selectedTags =
+    category === "home"
+      ? Array.from(
+          $("editHousingTags").querySelectorAll(
+            'input[type="checkbox"]:checked'
+          )
+        ).map(input => input.value)
+      : [];
+
+  if(name.length < 2 || name.length > 100){
+    alert("장소 이름을 2~100자로 입력하세요.");
+    return;
   }
- }
 
- saving=true;
- $("saveNew").disabled=true;
- $("modalStatus").textContent="공용 데이터 저장 중...";
+  if(!area){
+    alert("지역을 선택하세요.");
+    return;
+  }
 
- try{
-  let communityId=null;
+  const editing = editingId
+    ? getPlace(editingId)
+    : null;
+
+  /*
+    새 장소는 지도 좌표 필수.
+    기존 장소는 좌표가 없는 경우에도
+    다른 정보만 수정할 수 있도록 허용.
+  */
+  if(!editing && !validCoord(pendingLocation)){
+    alert("지도에서 위치를 먼저 선택하세요.");
+    return;
+  }
+
+  for(const rent of [rent2,rent3]){
+    if(
+      rent !== null &&
+      (
+        !Number.isFinite(rent) ||
+        rent < 0 ||
+        rent > 10000000
+      )
+    ){
+      alert("임대료를 확인하세요.");
+      return;
+    }
+  }
 
   if(!editing){
-   const r=await db.from("community_places")
-    .insert({...payload,price:null})
-    .select("id").single();
-   if(r.error)throw r.error;
-   communityId=r.data.id;
-  }else if(editing.source==="community"){
-   const r=await db.from("community_places")
-    .update(payload)
-    .eq("id",editing.dbId)
-    .select("id").single();
-   if(r.error)throw r.error;
-   communityId=editing.dbId;
-  }else{
-   const r=await db.from("base_place_edits").upsert({
-    place_id:editing.id,...payload,
-    price:null,size:null,
-    buildings,amenities,
-    rent_2br:rent2,
-    rent_3br:rent3,
-    housing_tags:housingTags
-   },{onConflict:"place_id"});
-   if(r.error)throw r.error;
+    const duplicate = places.some(p => {
+      if(!validCoord(p)) return false;
+
+      return (
+        p.name.trim().toLowerCase() ===
+          name.toLowerCase() &&
+        Math.abs(Number(p.lat) - pendingLocation.lat)
+          < 0.0002 &&
+        Math.abs(Number(p.lng) - pendingLocation.lng)
+          < 0.0002
+      );
+    });
+
+    if(duplicate){
+      alert("같은 이름과 위치의 장소가 이미 있습니다.");
+      return;
+    }
   }
 
-  if(communityId){
-   const r=await db.from("community_place_details").upsert({
-    place_id:communityId,
-    size:null,
-    buildings,amenities,
+  const payload = {
+    name,
+    category,
+    area,
+    note,
+    buildings,
+    amenities,
     rent_2br:rent2,
     rent_3br:rent3,
-    housing_tags:housingTags
-   },{onConflict:"place_id"});
-   if(r.error)throw r.error;
+    housing_tags:selectedTags
+  };
+
+  if(validCoord(pendingLocation)){
+    payload.lat = pendingLocation.lat;
+    payload.lng = pendingLocation.lng;
   }
 
-  const wasEdit=!!editing;
-  const location={...pendingLocation};
-  closeModal();
-  editingId=null;
-  pendingLocation=null;
+  saving = true;
+  $("saveNew").disabled = true;
 
-  await loadData();
-  if(map){map.panTo(location);map.setZoom(15)}
-  $("mapnote").textContent=name+(wasEdit?" · 수정 완료":" · 등록 완료");
-  alert(wasEdit?"장소 정보가 수정되었습니다.":"장소가 공용 지도에 등록되었습니다.");
+  $("modalStatus").textContent =
+    "Supabase에 저장하는 중...";
 
- }catch(e){
-  console.error(e);
-  $("modalStatus").textContent="저장 실패: "+(e.message||"Supabase 설정 확인");
- }finally{
-  saving=false;
-  $("saveNew").disabled=false;
- }
+  try{
+    let result;
+    let savedId;
+
+    if(editing){
+      savedId = editing.id;
+
+      result = await db
+        .from("map_places")
+        .update(payload)
+        .eq("id",editing.id)
+        .select("id")
+        .single();
+
+    }else{
+      savedId = makeId();
+
+      result = await db
+        .from("map_places")
+        .insert({
+          id:savedId,
+          ...payload,
+          source:"community"
+        })
+        .select("id")
+        .single();
+    }
+
+    if(result.error){
+      throw result.error;
+    }
+
+    closeModal();
+
+    const wasEditing = !!editing;
+    const savedLocation = pendingLocation;
+
+    editingId = null;
+    pendingLocation = null;
+
+    await loadData();
+
+    selectedId = savedId;
+    render();
+
+    if(map && validCoord(savedLocation)){
+      map.panTo(savedLocation);
+      map.setZoom(15);
+    }
+
+    $("mapnote").textContent =
+      name +
+      (wasEditing ? " · 수정 완료" : " · 등록 완료");
+
+    alert(
+      wasEditing
+        ? "장소 정보가 수정되었습니다."
+        : "새 장소가 등록되었습니다."
+    );
+
+  }catch(error){
+    console.error(error);
+
+    $("modalStatus").textContent =
+      "저장 실패: " +
+      (error.message || "설정을 확인하세요.");
+
+  }finally{
+    saving = false;
+    $("saveNew").disabled = false;
+  }
 };
 
+/* ===============================
+   13. 전체 화면 렌더링
+================================ */
+
 function render(){
- renderFilters();
- renderHousingFilter();
- renderLegend();
- renderList();
- renderRoute();
- renderDetail();
- syncMarkers();
+  renderFilters();
+  renderLegend();
+  renderList();
+  renderRoute();
+  renderDetail();
+  syncMarkers();
 }
+
+/* ===============================
+   14. 최초 실행
+================================ */
+
 $("search").addEventListener("input",render);
-rebuild();
+
 render();
 loadData();
-setInterval(()=>{
- if(!document.hidden)loadData();
-},20000);
-document.addEventListener("visibilitychange",()=>{
- if(!document.hidden)loadData();
-});
+
+/*
+  주기적 자동 조회 없음.
+  수동 새로고침 또는 저장 직후에만 다시 조회.
+*/
+
 </script>
 
-<script async defer
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async">
-</script>
+<script
+  async
+  defer
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async"
+></script>
+
 </body>
 </html>
