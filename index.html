@@ -498,30 +498,45 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 .route-card {
-  margin-top:15px;
+  margin-top:12px;
   border:1px solid var(--line);
-  border-radius:16px;
-  padding:17px;
+  border-radius:13px;
+  padding:12px;
 }
 
 .route-card h3 {
-  margin:0 0 15px;
+  margin:0 0 8px;
+  font-size:13px;
+}
+
+.route-card .muted {
+  margin:8px 0 0;
+  font-size:11px;
+  line-height:1.45;
+}
+
+.route-card .btn {
+  min-height:32px;
+  padding:7px 9px;
 }
 
 .route-grid {
   display:grid;
-  grid-template-columns:1fr 34px 1fr;
+  grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr);
   gap:8px;
   align-items:center;
 }
 
 .route-box {
-  min-height:112px;
-  padding:12px 7px;
+  min-width:0;
+  min-height:64px;
+  padding:8px 6px;
   background:#fff;
   border:2px solid #e2e8ef;
-  border-radius:13px;
+  border-radius:10px;
   text-align:center;
+  font-size:11px;
+  line-height:1.35;
 }
 
 .route-box.active {
@@ -529,14 +544,9 @@ h3 { font-size:14px;margin:20px 0 9px; }
   border-color:var(--blue);
 }
 
-.route-box small {
-  display:block;
-  color:var(--muted);
-  font-size:11px;
-  margin:8px 0;
-}
-
 .route-box strong {
+  display:block;
+  margin-top:5px;
   font-size:12px;
   overflow-wrap:anywhere;
 }
@@ -545,9 +555,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
   border:1px solid var(--line);
   background:#fff;
   border-radius:50%;
-  width:34px;
-  height:34px;
-  font-size:19px;
+  width:28px;
+  height:28px;
+  padding:0;
+  font-size:17px;
 }
 
 .btn {
@@ -571,9 +582,9 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
 .route-actions {
   display:grid;
-  grid-template-columns:90px 1fr;
-  gap:8px;
-  margin-top:12px;
+  grid-template-columns:68px minmax(0,1fr);
+  gap:7px;
+  margin-top:8px;
 }
 
 .facts {
@@ -891,8 +902,6 @@ h3 { font-size:14px;margin:20px 0 9px; }
         <button id="originBox" class="route-box active">
           🔵 출발지
 
-          <small>선택한 장소</small>
-
           <strong id="originName">
             선택해 주세요
           </strong>
@@ -904,8 +913,6 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
         <button id="destinationBox" class="route-box">
           🟢 도착지
-
-          <small>선택한 장소</small>
 
           <strong id="destinationName">
             선택해 주세요
@@ -931,8 +938,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
       </div>
 
       <p class="muted">
-        출발지·도착지 박스를 누른 다음
-        목록이나 지도 마커를 선택하세요.
+        출발지·도착지 선택 후 장소를 눌러주세요.
       </p>
 
     </div>
