@@ -42,6 +42,20 @@ button:disabled { opacity:.5;cursor:not-allowed; }
 .sidebar { border-right:1px solid var(--line); }
 .detail { border-left:1px solid var(--line); }
 
+.company-brand {
+  display:flex;
+  align-items:center;
+  margin-bottom:12px;
+}
+
+.company-logo {
+  display:block;
+  width:128px;
+  height:26px;
+  object-fit:cover;
+  object-position:center;
+}
+
 h1 { font-size:23px;margin:0 0 15px; }
 h2 { font-size:20px;margin:0 0 10px; }
 h3 { font-size:14px;margin:20px 0 9px; }
@@ -786,6 +800,16 @@ h3 { font-size:14px;margin:20px 0 9px; }
 <div class="app">
 
   <aside class="sidebar">
+
+    <div class="company-brand">
+      <img
+        class="company-logo"
+        src="./assets/duol-logo.png"
+        alt="두올(DUOL)"
+        width="128"
+        height="26"
+      >
+    </div>
 
     <h1>Monterrey Living Map</h1>
 
