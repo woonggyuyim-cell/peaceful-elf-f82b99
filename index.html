@@ -432,7 +432,6 @@ h3 { font-size:14px;margin:20px 0 9px; }
   적용했을 때 이름 표시.
 */
 
-.living-marker:hover .living-marker-pill,
 .living-marker.is-expanded .living-marker-pill {
   width:var(--expanded-width,150px);
 
@@ -442,12 +441,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
       var(--marker-glow,#2878d033);
 }
 
-.living-marker:hover .living-marker-inner,
 .living-marker.is-expanded .living-marker-inner {
   gap:8px;
 }
 
-.living-marker:hover .living-marker-name,
 .living-marker.is-expanded .living-marker-name {
   width:var(--text-width,100px);
   max-width:var(--text-width,100px);
@@ -677,6 +674,23 @@ h3 { font-size:14px;margin:20px 0 9px; }
 .field textarea {
   min-height:85px;
   resize:vertical;
+}
+
+#editHousingTags .tag {
+  display:inline-flex;
+  align-items:center;
+  flex:0 0 auto;
+  gap:5px;
+  margin-bottom:0;
+  white-space:nowrap;
+}
+
+#editHousingTags input[type="checkbox"] {
+  display:inline-block;
+  flex:0 0 auto;
+  width:auto;
+  margin:0;
+  padding:0;
 }
 
 .form-grid {
@@ -1251,7 +1265,7 @@ let map = null;
 let markers = new Map();
 let LivingMarkerClass = null;
 
-const markerExpandTimers = new Map();
+let expandedMarkerId = null;
 
 let selectedId = null;
 let mapHighlightedId = null;
@@ -1861,12 +1875,7 @@ function getLivingMarkerClass() {
 
             selectPlace(p.id,true);
 
-            /*
-              태블릿 터치 시에도
-              2.2초 동안 이름 표시.
-            */
-
-            this.expandFor(2200);
+            setExpandedMarker(p.id);
           }
         );
 
@@ -1887,6 +1896,13 @@ function getLivingMarkerClass() {
         this.getPanes()
           .overlayMouseTarget
           .appendChild(wrapper);
+
+        google.maps.OverlayView.preventMapHitsFrom(wrapper);
+        this.setSelected(selectedId === p.id);
+
+        if (expandedMarkerId === p.id) {
+          this.expand();
+        }
       }
 
       draw() {
@@ -1914,14 +1930,6 @@ function getLivingMarkerClass() {
 
       onRemove() {
 
-        clearTimeout(
-          markerExpandTimers.get(this.place.id)
-        );
-
-        markerExpandTimers.delete(
-          this.place.id
-        );
-
         if (this.element) {
           this.element.remove();
           this.element = null;
@@ -1929,6 +1937,11 @@ function getLivingMarkerClass() {
       }
 
       expand() {
+
+        if (
+          expandedMarkerId !== null &&
+          expandedMarkerId !== this.place.id
+        ) return;
 
         if (this.element) {
 
@@ -1940,7 +1953,12 @@ function getLivingMarkerClass() {
         }
       }
 
-      collapse() {
+      collapse(force=false) {
+
+        if (
+          !force &&
+          expandedMarkerId === this.place.id
+        ) return;
 
         if (this.element) {
 
@@ -1953,30 +1971,6 @@ function getLivingMarkerClass() {
               ? "1000"
               : "1";
         }
-      }
-
-      expandFor(milliseconds=2200) {
-
-        this.expand();
-
-        clearTimeout(
-          markerExpandTimers.get(this.place.id)
-        );
-
-        const timer = setTimeout(() => {
-
-          this.collapse();
-
-          markerExpandTimers.delete(
-            this.place.id
-          );
-
-        },milliseconds);
-
-        markerExpandTimers.set(
-          this.place.id,
-          timer
-        );
       }
 
       setSelected(selected) {
@@ -2002,6 +1996,19 @@ function getLivingMarkerClass() {
     };
 
   return LivingMarkerClass;
+}
+
+function setExpandedMarker(id) {
+
+  expandedMarkerId = id;
+
+  for (const [markerId,marker] of markers) {
+    if (markerId === id) {
+      marker.expand();
+    } else {
+      marker.collapse(true);
+    }
+  }
 }
 
 /* ======================================
@@ -2030,6 +2037,13 @@ function syncMarkers() {
   const visibleIds = new Set(
     visible.map(p => p.id)
   );
+
+  if (
+    expandedMarkerId !== null &&
+    !visibleIds.has(expandedMarkerId)
+  ) {
+    setExpandedMarker(null);
+  }
 
   /*
     실제 데이터에서 삭제된 마커만 제거.
@@ -2108,6 +2122,8 @@ function initMap() {
   );
 
   map.addListener("click",event => {
+
+    setExpandedMarker(null);
 
     if (pickMode) {
       handleMapPick(event.latLng);
@@ -2569,11 +2585,6 @@ function renderEditTags(selected=[]) {
     housingTags.map(tag => `
       <label
         class="tag"
-        style="
-          display:inline-flex;
-          align-items:center;
-          gap:5px;
-        "
       >
 
         <input
@@ -3125,3 +3136,4 @@ loadData();
 
 </body>
 </html>
+
