@@ -169,8 +169,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
   transition:
     background-color .2s ease,
-    box-shadow .2s ease,
-    transform .2s ease;
+    box-shadow .2s ease;
 }
 
 .item:hover {
@@ -181,24 +180,43 @@ h3 { font-size:14px;margin:20px 0 9px; }
   background:#f3f8ff;
 }
 
+/*
+  지도에서 선택한 건물만
+  왼쪽 목록 박스에 빛나는 효과 적용
+*/
+
 .item.map-selected {
-  background:var(--selected-bg,#edf5ff);
+  position:relative;
+
+  background:
+    var(--selected-bg,#edf5ff)!important;
+
   box-shadow:
-    inset 0 0 0 2px var(--selected-color,#2878d0),
-    0 0 15px var(--selected-glow,#2878d044);
-  animation:selectedPlacePulse 1.3s ease-in-out 2;
+    inset 0 0 0 2px
+      var(--selected-color,#2878d0),
+    0 0 10px
+      var(--selected-glow,#2878d055);
+
+  animation:
+    listGlow 1.5s ease-in-out 3;
 }
 
-.item.map-selected .pin {
-  box-shadow:
-    0 0 0 3px #fff,
-    0 0 0 5px var(--selected-color,#2878d0),
-    0 0 16px var(--selected-color,#2878d0);
-}
+@keyframes listGlow {
+  0%,100% {
+    box-shadow:
+      inset 0 0 0 2px
+        var(--selected-color,#2878d0),
+      0 0 8px
+        var(--selected-glow,#2878d055);
+  }
 
-@keyframes selectedPlacePulse {
-  0%,100% { transform:scale(1); }
-  50% { transform:scale(1.015); }
+  50% {
+    box-shadow:
+      inset 0 0 0 2px
+        var(--selected-color,#2878d0),
+      0 0 23px 5px
+        var(--selected-glow,#2878d055);
+  }
 }
 
 .item strong {
@@ -272,11 +290,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
 /* ==========================
    확장형 지도 마커
 
-   핵심:
-   - 좌표 기준 중심 고정
-   - 내부 콘텐츠 중앙 정렬
-   - 양쪽 여백 동일
-   - 이름 길이에 따라 확장
+   - 모든 테두리 흰색
+   - 정확한 중앙 정렬
+   - 마우스 호버 확장
+   - 태블릿 포인터 이벤트 지원
 ========================== */
 
 .living-marker {
@@ -289,10 +306,22 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
   cursor:pointer;
   user-select:none;
+
   -webkit-tap-highlight-color:transparent;
 
   overflow:visible;
+
+  pointer-events:auto;
+  touch-action:manipulation;
+
+  z-index:1;
 }
+
+/*
+  실제 마커의 시각적 영역.
+
+  중앙을 기준으로 양쪽으로 확장한다.
+*/
 
 .living-marker-pill {
   position:absolute;
@@ -311,16 +340,20 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
   padding:0;
 
-  border:3px solid #fff;
+  border:3px solid #fff!important;
   border-radius:999px;
 
-  background:var(--marker-color,#2878d0);
+  background:
+    var(--marker-color,#2878d0);
+
   color:#fff;
 
   box-shadow:0 3px 9px #0003;
 
   overflow:hidden;
   white-space:nowrap;
+
+  pointer-events:none;
 
   transition:
     width .32s cubic-bezier(.22,1,.36,1),
@@ -342,6 +375,8 @@ h3 { font-size:14px;margin:20px 0 9px; }
   margin:0 auto;
 
   gap:0;
+
+  pointer-events:none;
 }
 
 .living-marker-icon {
@@ -353,12 +388,15 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
   width:24px;
   height:24px;
+
+  pointer-events:none;
 }
 
 .living-marker-icon svg {
   display:block;
   width:24px;
   height:24px;
+  pointer-events:none;
 }
 
 .living-marker-name {
@@ -370,13 +408,17 @@ h3 { font-size:14px;margin:20px 0 9px; }
   overflow:hidden;
   opacity:0;
 
-  font-family:Arial,"Noto Sans KR",sans-serif;
+  font-family:
+    Arial,"Noto Sans KR",sans-serif;
+
   font-size:12px;
   font-weight:700;
   line-height:1.2;
 
   white-space:nowrap;
   text-overflow:ellipsis;
+
+  pointer-events:none;
 
   transition:
     width .32s cubic-bezier(.22,1,.36,1),
@@ -385,14 +427,9 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 /*
-  마커 확장:
-  전체 너비 = 테두리 6px
-            + 좌우 여백 32px
-            + 아이콘 24px
-            + 간격 8px
-            + 텍스트 실제 너비
-
-  중앙 정렬은 flex + margin auto로 처리.
+  마우스가 마커 위에 있을 때
+  또는 JavaScript가 확장 상태를
+  적용했을 때 이름 표시.
 */
 
 .living-marker:hover .living-marker-pill,
@@ -401,7 +438,8 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
   box-shadow:
     0 5px 18px #0004,
-    0 0 0 3px var(--marker-glow,#2878d033);
+    0 0 0 3px
+      var(--marker-glow,#2878d033);
 }
 
 .living-marker:hover .living-marker-inner,
@@ -416,13 +454,19 @@ h3 { font-size:14px;margin:20px 0 9px; }
   opacity:1;
 }
 
+/*
+  선택한 마커도 테두리는 흰색.
+
+  이전의 카테고리 색상 outline 제거.
+*/
+
 .living-marker.is-selected .living-marker-pill {
-  outline:2px solid var(--marker-color,#2878d0);
-  outline-offset:2px;
+  border:3px solid #fff!important;
+  outline:none!important;
 }
 
 .living-marker:focus-visible .living-marker-pill {
-  outline:3px solid #25354a;
+  outline:2px solid #fff;
   outline-offset:3px;
 }
 
@@ -893,8 +937,6 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
 </div>
 
-<!-- 장소 추가 / 편집 -->
-
 <div id="modalOverlay" class="modal-overlay hidden">
 
   <div class="modal">
@@ -1137,9 +1179,6 @@ const housingTags = [
 
 /* ======================================
    3. 픽토그램
-
-   병원 아이콘:
-   닫힌 십자가 SVG 경로 사용
 ====================================== */
 
 const iconPaths = {
@@ -1159,6 +1198,11 @@ const iconPaths = {
     '<circle cx="19" cy="20" r="1"/>' +
     '<path d="M2 3h3l3 12h12l2-9H6"/>',
 
+  /*
+    병원 픽토그램:
+    닫힌 십자가 경로 사용
+  */
+
   hospital:
     '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/>',
 
@@ -1169,14 +1213,25 @@ const iconPaths = {
 };
 
 function iconSVG(type,size=24) {
+
+  /*
+    병원 아이콘만 fill 적용.
+    나머지는 선형 아이콘 유지.
+  */
+
+  const fill =
+    type === "hospital"
+      ? "#ffffff"
+      : "none";
+
   return `
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="${size}"
       height="${size}"
       viewBox="0 0 24 24"
-      fill="none"
-      stroke="#fff"
+      fill="${fill}"
+      stroke="#ffffff"
       stroke-width="2"
       stroke-linecap="round"
       stroke-linejoin="round"
@@ -1508,7 +1563,7 @@ function renderList() {
   $("counter").textContent =
     rows.length +
     "개 장소 · 지도 표시 " +
-    rows.filter(validCoord).length +
+    places.filter(validCoord).length +
     "개";
 
   $("list").innerHTML = rows.map(p => {
@@ -1588,13 +1643,10 @@ function renderList() {
 /* ======================================
    9. HTML 기반 지도 마커
 
-   원형 → 둥근 직사각형
-
-   실제 텍스트 너비 측정
-
-   좌우 동일 여백
-
-   중앙 기준으로 양쪽 확장
+   - 전체 지도 마커 유지
+   - 선택 시 재생성하지 않음
+   - 블루투스 마우스 호버 지원
+   - 중앙 기준으로 양쪽 확장
 ====================================== */
 
 function getLivingMarkerClass() {
@@ -1670,10 +1722,7 @@ function getLivingMarkerClass() {
         this.element = wrapper;
 
         /*
-          텍스트의 실제 너비를 계산한다.
-
-          단순 글자 수가 아니라 브라우저가
-          렌더링하는 글자 폭을 기준으로 한다.
+          실제 텍스트 너비를 측정.
         */
 
         const canvas =
@@ -1693,15 +1742,7 @@ function getLivingMarkerClass() {
         );
 
         /*
-          마커 너비 계산
-
-          아이콘: 24px
-          아이콘과 이름 간격: 8px
-          좌우 여백: 각각 16px
-          테두리: 좌우 각각 3px
-
-          아이콘 + 이름 그룹 전체가
-          가운데 위치하도록 한다.
+          좌우 여백 각각 16px.
         */
 
         const iconWidth = 24;
@@ -1745,9 +1786,50 @@ function getLivingMarkerClass() {
           p.name + " 장소 선택"
         );
 
+        /*
+          마우스 호버 이벤트.
+
+          pointerenter를 사용하여
+          태블릿 블루투스 마우스도 지원.
+        */
+
+        wrapper.addEventListener(
+          "pointerenter",
+          event => {
+
+            if (pickMode) return;
+
+            if (
+              event.pointerType === "mouse" ||
+              event.pointerType === "pen"
+            ) {
+              this.expand();
+            }
+          }
+        );
+
+        wrapper.addEventListener(
+          "pointerleave",
+          event => {
+
+            if (
+              event.pointerType === "mouse" ||
+              event.pointerType === "pen"
+            ) {
+              this.collapse();
+            }
+          }
+        );
+
+        /*
+          일부 브라우저에서 pointerenter가
+          발생하지 않을 경우를 위한 보조 처리.
+        */
+
         wrapper.addEventListener(
           "mouseenter",
           () => {
+
             if (!pickMode) {
               this.expand();
             }
@@ -1779,11 +1861,12 @@ function getLivingMarkerClass() {
 
             selectPlace(p.id,true);
 
-            const current = markers.get(p.id);
+            /*
+              태블릿 터치 시에도
+              2.2초 동안 이름 표시.
+            */
 
-            if (current) {
-              current.expandFor(2200);
-            }
+            this.expandFor(2200);
           }
         );
 
@@ -1800,11 +1883,6 @@ function getLivingMarkerClass() {
             }
           }
         );
-
-        /*
-          Google Maps 클릭/호버 가능한
-          오버레이 영역에 마커 배치
-        */
 
         this.getPanes()
           .overlayMouseTarget
@@ -1827,12 +1905,6 @@ function getLivingMarkerClass() {
 
         if (!point) return;
 
-        /*
-          좌표의 정중앙에 마커를 고정한다.
-
-          확장 시 좌우로 동일하게 늘어난다.
-        */
-
         this.element.style.left =
           point.x + "px";
 
@@ -1841,6 +1913,14 @@ function getLivingMarkerClass() {
       }
 
       onRemove() {
+
+        clearTimeout(
+          markerExpandTimers.get(this.place.id)
+        );
+
+        markerExpandTimers.delete(
+          this.place.id
+        );
 
         if (this.element) {
           this.element.remove();
@@ -1908,8 +1988,15 @@ function getLivingMarkerClass() {
             selected
           );
 
-          this.element.style.zIndex =
-            selected ? "1000" : "1";
+          if (
+            !this.element.classList.contains(
+              "is-expanded"
+            )
+          ) {
+
+            this.element.style.zIndex =
+              selected ? "1000" : "1";
+          }
         }
       }
     };
@@ -1919,35 +2006,38 @@ function getLivingMarkerClass() {
 
 /* ======================================
    10. 지도 마커 생성 및 업데이트
+
+   핵심 수정:
+   카테고리 필터와 관계없이
+   모든 지도 마커를 유지한다.
+
+   장소 선택만으로 마커를 재생성하지 않음.
 ====================================== */
 
 function syncMarkers() {
 
   if (!map) return;
 
-  const visible = visiblePlaces()
-    .filter(validCoord);
+  /*
+    왼쪽 목록의 필터는 적용하지 않음.
+
+    지도에는 전체 장소 표시.
+  */
+
+  const visible =
+    places.filter(validCoord);
 
   const visibleIds = new Set(
     visible.map(p => p.id)
   );
 
   /*
-    화면에서 제외된 마커만 제거.
-
-    기존 마커는 유지하여 호버 애니메이션이
-    불필요하게 초기화되지 않도록 한다.
+    실제 데이터에서 삭제된 마커만 제거.
   */
 
   for (const [id,marker] of markers) {
 
     if (!visibleIds.has(id)) {
-
-      clearTimeout(
-        markerExpandTimers.get(id)
-      );
-
-      markerExpandTimers.delete(id);
 
       marker.setMap(null);
       markers.delete(id);
@@ -1961,6 +2051,11 @@ function syncMarkers() {
 
     let marker = markers.get(p.id);
 
+    /*
+      이름, 종류, 좌표가 변경된 경우에만
+      해당 마커 하나를 다시 생성.
+    */
+
     const needsRebuild =
       marker &&
       (
@@ -1971,12 +2066,6 @@ function syncMarkers() {
       );
 
     if (needsRebuild) {
-
-      clearTimeout(
-        markerExpandTimers.get(p.id)
-      );
-
-      markerExpandTimers.delete(p.id);
 
       marker.setMap(null);
       markers.delete(p.id);
@@ -2203,9 +2292,9 @@ function renderDetail() {
 
    지도에서 마커 클릭 시:
    - 카테고리 자동 전환
-   - 검색 필터 해제
-   - 왼쪽 목록으로 스크롤
-   - 카테고리 색상 강조
+   - 왼쪽 목록 자동 스크롤
+   - 해당 건물 박스만 빛나는 효과
+   - 지도 전체 마커는 그대로 유지
 ====================================== */
 
 function selectPlace(id,fromMap=false) {
@@ -2231,7 +2320,7 @@ function selectPlace(id,fromMap=false) {
   }
 
   /*
-    기존 출발지 / 도착지 선택 유지
+    출발지 / 도착지 선택 유지
   */
 
   if (routeMode === "origin") {
@@ -2255,14 +2344,19 @@ function selectPlace(id,fromMap=false) {
 
   render();
 
+  /*
+    지도 중심만 이동.
+
+    줌 레벨을 강제로 변경하지 않아
+    클릭 시 화면 깜빡임 최소화.
+  */
+
   if (map && validCoord(p)) {
 
     map.panTo({
       lat:Number(p.lat),
       lng:Number(p.lng)
     });
-
-    map.setZoom(15);
   }
 
   $("mapnote").textContent =
@@ -2271,8 +2365,9 @@ function selectPlace(id,fromMap=false) {
     categories[p.type].label;
 
   /*
-    지도 마커에서 선택한 경우
-    왼쪽 목록의 해당 장소로 자동 이동
+    지도 마커 클릭 시
+    왼쪽 목록 패널 내부에서만
+    해당 건물로 스크롤.
   */
 
   if (fromMap) {
@@ -2285,11 +2380,29 @@ function selectPlace(id,fromMap=false) {
       el.dataset.place === id
     );
 
-    if (item) {
+    const sidebar =
+      document.querySelector(".sidebar");
 
-      item.scrollIntoView({
-        behavior:"smooth",
-        block:"center"
+    if (item && sidebar) {
+
+      const itemRect =
+        item.getBoundingClientRect();
+
+      const sidebarRect =
+        sidebar.getBoundingClientRect();
+
+      const targetScroll =
+        sidebar.scrollTop +
+        itemRect.top -
+        sidebarRect.top -
+        (
+          sidebar.clientHeight -
+          itemRect.height
+        ) / 2;
+
+      sidebar.scrollTo({
+        top:Math.max(0,targetScroll),
+        behavior:"smooth"
       });
     }
   }
@@ -2756,13 +2869,6 @@ $("saveNew").onclick = async () => {
     ? getPlace(editingId)
     : null;
 
-  /*
-    새 장소는 좌표 필수.
-
-    기존 장소는 좌표가 없어도
-    다른 정보 수정 가능.
-  */
-
   if (
     !editing &&
     !validCoord(pendingLocation)
@@ -2897,11 +3003,6 @@ $("saveNew").onclick = async () => {
     editingId = null;
     pendingLocation = null;
 
-    /*
-      저장 중 조회 차단을 해제한 뒤
-      Supabase 데이터를 다시 불러온다.
-    */
-
     saving = false;
 
     await loadData();
@@ -2930,7 +3031,6 @@ $("saveNew").onclick = async () => {
     ) {
 
       map.panTo(savedLocation);
-      map.setZoom(15);
     }
 
     $("mapnote").textContent =
@@ -2979,6 +3079,12 @@ function render() {
   renderList();
   renderRoute();
   renderDetail();
+
+  /*
+    마커를 매번 제거하지 않고
+    변경된 데이터만 동기화.
+  */
+
   syncMarkers();
 }
 
