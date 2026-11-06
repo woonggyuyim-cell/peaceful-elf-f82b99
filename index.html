@@ -1233,9 +1233,10 @@ const iconPaths = {
     '<path d="M9 21v-7h6v7"/>',
 
   school:
-    '<path d="M3 21V9l9-5 9 5v12"/>' +
-    '<path d="M3 21h18M9 21v-6h6v6"/>' +
-    '<path d="M8 10h1M12 10h1M16 10h1"/>',
+    '<path d="M9 5V4a3 3 0 0 1 6 0v1"/>' +
+    '<rect x="5" y="5" width="14" height="17" rx="4"/>' +
+    '<rect x="8" y="13" width="8" height="6" rx="1.5"/>' +
+    '<path d="M9 9h6M3 11v6M21 11v6"/>',
 
   market:
     '<circle cx="9" cy="20" r="1"/>' +
@@ -1687,7 +1688,7 @@ function renderList() {
 /* ======================================
    9. HTML 기반 지도 마커
 
-   - 전체 지도 마커 유지
+   - 목록과 같은 필터로 지도 마커 표시
    - 선택 시 재생성하지 않음
    - 블루투스 마우스 호버 지원
    - 중앙 기준으로 양쪽 확장
@@ -2044,9 +2045,8 @@ function setExpandedMarker(id) {
 /* ======================================
    10. 지도 마커 생성 및 업데이트
 
-   핵심 수정:
-   카테고리 필터와 관계없이
-   모든 지도 마커를 유지한다.
+   카테고리, 검색, 주택 조건을
+   왼쪽 목록과 동일하게 적용한다.
 
    장소 선택만으로 마커를 재생성하지 않음.
 ====================================== */
@@ -2056,13 +2056,11 @@ function syncMarkers() {
   if (!map) return;
 
   /*
-    왼쪽 목록의 필터는 적용하지 않음.
-
-    지도에는 전체 장소 표시.
+    목록과 동일한 장소 중 좌표가 있는 장소 표시.
   */
 
   const visible =
-    places.filter(validCoord);
+    visiblePlaces().filter(validCoord);
 
   const visibleIds = new Set(
     visible.map(p => p.id)
@@ -2076,7 +2074,7 @@ function syncMarkers() {
   }
 
   /*
-    실제 데이터에서 삭제된 마커만 제거.
+    필터에서 제외되거나 삭제된 마커 제거.
   */
 
   for (const [id,marker] of markers) {
@@ -2337,10 +2335,10 @@ function renderDetail() {
    13. 장소 선택
 
    지도에서 마커 클릭 시:
-   - 카테고리 자동 전환
+   - 현재 카테고리 유지
    - 왼쪽 목록 자동 스크롤
    - 해당 건물 박스만 빛나는 효과
-   - 지도 전체 마커는 그대로 유지
+   - 현재 카테고리에 맞는 지도 마커 유지
 ====================================== */
 
 function selectPlace(id,fromMap=false) {
@@ -2353,7 +2351,6 @@ function selectPlace(id,fromMap=false) {
 
   if (fromMap) {
 
-    activeCategory = p.type;
     activeTags = [];
 
     $("search").value = "";
