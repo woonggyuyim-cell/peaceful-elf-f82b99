@@ -1608,7 +1608,7 @@ function renderList() {
   $("counter").textContent =
     rows.length +
     "개 장소 · 지도 표시 " +
-    places.filter(validCoord).length +
+    rows.filter(validCoord).length +
     "개";
 
   $("list").innerHTML = rows.map(p => {
