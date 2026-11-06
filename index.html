@@ -503,12 +503,50 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 .edit-round {
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  border:1px solid #e0e6ee;
-  background:#fff;
-  font-size:18px;
+  min-height:36px;
+  padding:8px 12px;
+  border-radius:9px;
+  border:0;
+  background:var(--blue);
+  color:#fff;
+  font-size:12px;
+  font-weight:bold;
+  flex-shrink:0;
+}
+
+.delete-round {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  flex-shrink:0;
+  border:0;
+  border-radius:9px;
+  background:#dc3535;
+  color:#fff;
+  font-size:20px;
+}
+
+.delete-dialog {
+  width:min(380px,calc(100% - 28px));
+  padding:24px;
+  border:0;
+  border-radius:17px;
+  color:var(--ink);
+  box-shadow:0 12px 45px #0003;
+}
+
+.delete-dialog::backdrop {
+  background:#18283b99;
+}
+
+.delete-dialog p {
+  overflow-wrap:anywhere;
+}
+
+.btn.danger {
+  background:#dc3535;
 }
 
 .route-card {
@@ -913,7 +951,16 @@ h3 { font-size:14px;margin:20px 0 9px; }
         id="editRound"
         class="edit-round hidden"
         title="장소 편집"
-      >✎</button>
+        type="button"
+      >편집</button>
+
+      <button
+        id="deleteRound"
+        class="delete-round hidden"
+        title="장소 삭제"
+        aria-label="장소 삭제"
+        type="button"
+      >✕</button>
 
     </div>
 
@@ -1157,6 +1204,26 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
 </div>
 
+<dialog
+  id="deleteDialog"
+  class="delete-dialog"
+  role="alertdialog"
+  aria-labelledby="deleteTitle"
+  aria-describedby="deletePlaceName deleteDescription"
+>
+  <h2 id="deleteTitle">정말로 삭제하시나요?</h2>
+  <p id="deletePlaceName"></p>
+  <p id="deleteDescription" class="muted">
+    Supabase에 저장된 장소 정보가 실제로 삭제됩니다.
+    삭제한 정보는 되돌릴 수 없습니다.
+  </p>
+  <p id="deleteStatus" class="status error hidden" role="alert"></p>
+  <div class="form-actions">
+    <button id="cancelDelete" class="btn secondary" type="button" autofocus>아니오</button>
+    <button id="confirmDelete" class="btn danger" type="button">예</button>
+  </div>
+</dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
 <script>
@@ -1314,6 +1381,8 @@ let pickMode = false;
 
 let loading = false;
 let saving = false;
+let deleting = false;
+let deletingPlaceId = null;
 
 /* ======================================
    5. 공통 함수
@@ -1384,7 +1453,7 @@ function makeId() {
 ====================================== */
 
 async function loadData() {
-  if (loading || saving) return;
+  if (loading || saving || deleting) return;
 
   loading = true;
 
@@ -2201,6 +2270,11 @@ function renderDetail() {
     !p
   );
 
+  $("deleteRound").classList.toggle(
+    "hidden",
+    !p
+  );
+
   if (!p) {
 
     $("detailContent").innerHTML = `
@@ -2731,6 +2805,95 @@ function openEdit() {
 $("addFloating").onclick = openAdd;
 $("editRound").onclick = openEdit;
 
+/* Supabase에서 선택한 장소 한 건만 삭제합니다. */
+
+function openDelete() {
+  const p = getPlace(selectedId);
+  if (!p || saving || deleting) return;
+
+  deletingPlaceId = p.id;
+  $("deletePlaceName").textContent = p.name;
+  $("deleteStatus").textContent = "";
+  $("deleteStatus").classList.add("hidden");
+  $("deleteDialog").showModal();
+}
+
+function closeDelete() {
+  if (deleting) return;
+  $("deleteDialog").close();
+  deletingPlaceId = null;
+}
+
+$("deleteRound").onclick = openDelete;
+$("cancelDelete").onclick = closeDelete;
+
+$("deleteDialog").addEventListener("cancel",event => {
+  event.preventDefault();
+  closeDelete();
+});
+
+$("confirmDelete").onclick = async () => {
+  if (deleting || !deletingPlaceId) return;
+
+  if (loading || saving) {
+    $("deleteStatus").textContent = "정보 처리 중입니다. 잠시 후 다시 시도해 주세요.";
+    $("deleteStatus").classList.remove("hidden");
+    return;
+  }
+
+  const id = deletingPlaceId;
+  deleting = true;
+  $("confirmDelete").disabled = true;
+  $("cancelDelete").disabled = true;
+  $("confirmDelete").textContent = "삭제 중...";
+  $("deleteStatus").classList.add("hidden");
+
+  try {
+    const {data,error} = await db
+      .from("map_places")
+      .delete()
+      .eq("id",id)
+      .select("id")
+      .single();
+
+    if (error) throw error;
+    if (!data || data.id !== id) {
+      throw new Error("삭제 결과를 확인할 수 없습니다. 새로고침 후 다시 확인해 주세요.");
+    }
+
+    places = places.filter(p => p.id !== id);
+    if (selectedId === id) selectedId = null;
+    if (mapHighlightedId === id) mapHighlightedId = null;
+    if (expandedMarkerId === id) setExpandedMarker(null);
+    if (routeOrigin === id) {
+      routeOrigin = null;
+      routeMode = "origin";
+    }
+    if (routeDestination === id) {
+      routeDestination = null;
+      if (routeOrigin) routeMode = "destination";
+    }
+
+    deletingPlaceId = null;
+    $("deleteDialog").close();
+    render();
+    $("mapnote").textContent = "장소가 삭제되었습니다.";
+    setStatus("✓ 장소 삭제 완료 · 전체 장소 " + places.length + "개");
+
+  } catch(error) {
+    console.error(error);
+    $("deleteStatus").textContent =
+      "삭제 실패: " + (error.message || "연결 및 삭제 권한을 확인하세요.");
+    $("deleteStatus").classList.remove("hidden");
+
+  } finally {
+    deleting = false;
+    $("confirmDelete").disabled = false;
+    $("cancelDelete").disabled = false;
+    $("confirmDelete").textContent = "예";
+  }
+};
+
 $("closeModal").onclick = closeModal;
 $("cancelModal").onclick = closeModal;
 
@@ -2827,7 +2990,7 @@ $("cancelPick").onclick = () => {
 
 $("saveNew").onclick = async () => {
 
-  if (saving) return;
+  if (saving || deleting) return;
 
   const category =
     $("newCategory").value;
@@ -3163,4 +3326,3 @@ loadData();
 
 </body>
 </html>
-
