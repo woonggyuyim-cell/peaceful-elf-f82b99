@@ -5,44 +5,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Monterrey Living Map</title>
+
 <style>
-:root{
+:root {
   --blue:#2878d0;
   --ink:#25354a;
   --muted:#778596;
   --line:#e5eaf0;
 }
-*{box-sizing:border-box}
-body{
+
+* { box-sizing:border-box; }
+
+body {
   margin:0;
   font-family:Arial,"Noto Sans KR",sans-serif;
   color:var(--ink);
   background:#fff;
 }
-button,input,select,textarea{font:inherit}
-button{cursor:pointer}
-button:disabled{opacity:.5;cursor:not-allowed}
-.app{
+
+button,input,select,textarea { font:inherit; }
+button { cursor:pointer; }
+button:disabled { opacity:.5;cursor:not-allowed; }
+
+.app {
   display:grid;
   grid-template-columns:310px minmax(350px,1fr) 355px;
   height:100dvh;
 }
-.sidebar,.detail{
+
+.sidebar,.detail {
   padding:22px;
   overflow-y:auto;
-  background:white;
+  background:#fff;
 }
-.sidebar{border-right:1px solid var(--line)}
-.detail{border-left:1px solid var(--line)}
-h1{font-size:23px;margin:0 0 15px}
-h2{font-size:20px;margin:0 0 10px}
-h3{font-size:14px;margin:20px 0 9px}
-.subtitle,.muted{
+
+.sidebar { border-right:1px solid var(--line); }
+.detail { border-left:1px solid var(--line); }
+
+h1 { font-size:23px;margin:0 0 15px; }
+h2 { font-size:20px;margin:0 0 10px; }
+h3 { font-size:14px;margin:20px 0 9px; }
+
+.subtitle,.muted {
   color:var(--muted);
   font-size:12px;
   line-height:1.7;
 }
-.search{
+
+.search {
   width:100%;
   padding:13px;
   border:1px solid #dbe1e8;
@@ -50,57 +60,67 @@ h3{font-size:14px;margin:20px 0 9px}
   outline:none;
   margin:16px 0;
 }
-.filters,.tags,.legend{
+
+.filters,.tags,.legend {
   display:flex;
   flex-wrap:wrap;
   gap:7px;
 }
-.chip{
+
+.chip {
   padding:10px 13px;
   border:1px solid #e0e5ea;
-  background:white;
+  background:#fff;
   border-radius:24px;
   font-size:12px;
   color:#344256;
 }
-.chip.active{
+
+.chip.active {
   background:#eaf3fd;
   border-color:#b6d2ee;
   color:#175a9d;
   font-weight:bold;
 }
-.tag{
+
+.tag {
   border:1px solid #d6e1ee;
   border-radius:20px;
   padding:8px 11px;
   background:#fff;
   font-size:12px;
 }
-.tag.active{
+
+.tag.active {
   color:#fff;
   background:var(--blue);
   border-color:var(--blue);
 }
-.tag-section{
+
+.tag-section {
   margin:12px 0;
   padding:12px;
   background:#f6f9fd;
   border-radius:12px;
 }
-.tag-section.hidden{display:none}
-.legend{
+
+.hidden { display:none!important; }
+
+.legend {
   font-size:11px;
   color:var(--muted);
   margin:15px 0;
 }
-.dot{
+
+.dot {
   display:inline-block;
   width:9px;
   height:9px;
   border-radius:50%;
   margin-right:4px;
 }
-.status{
+
+.status {
   padding:11px;
   border-radius:10px;
   background:#eff8f2;
@@ -108,50 +128,96 @@ h3{font-size:14px;margin:20px 0 9px}
   font-size:12px;
   margin:12px 0;
 }
-.status.error{
+
+.status.error {
   background:#fff1f1;
   color:#b43d3d;
 }
-.row{
+
+.row {
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:8px;
 }
-.small-btn{
+
+.small-btn {
   border:1px solid #dce5ed;
-  background:white;
+  background:#fff;
   padding:8px 11px;
   border-radius:9px;
   font-size:12px;
 }
-.item{
+
+/* ==========================
+   왼쪽 장소 목록
+========================== */
+
+.item {
+  position:relative;
   display:flex;
   width:100%;
   text-align:left;
   align-items:center;
   gap:13px;
-  background:white;
+  background:#fff;
   border:0;
   border-bottom:1px solid #eef0f4;
-  padding:15px 4px;
+  border-radius:12px;
+  padding:15px 9px;
+  margin:2px 0;
+
+  transition:
+    background-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
 }
-.item:hover,.item.active{background:#f3f8ff}
-.item strong{
+
+.item:hover {
+  background:#f3f8ff;
+}
+
+.item.active {
+  background:#f3f8ff;
+}
+
+.item.map-selected {
+  background:var(--selected-bg,#edf5ff);
+  box-shadow:
+    inset 0 0 0 2px var(--selected-color,#2878d0),
+    0 0 15px var(--selected-glow,#2878d044);
+  animation:selectedPlacePulse 1.3s ease-in-out 2;
+}
+
+.item.map-selected .pin {
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 5px var(--selected-color,#2878d0),
+    0 0 16px var(--selected-color,#2878d0);
+}
+
+@keyframes selectedPlacePulse {
+  0%,100% { transform:scale(1); }
+  50% { transform:scale(1.015); }
+}
+
+.item strong {
   display:block;
   font-size:13px;
   margin-bottom:6px;
 }
-.item small{
+
+.item small {
   color:var(--muted);
   font-size:11px;
   line-height:1.5;
 }
-.pin{
+
+.pin {
   width:47px;
   height:47px;
   min-width:47px;
-  border:3px solid white;
+  border:3px solid #fff;
   outline:1px solid #e4eaf0;
   border-radius:50%;
   display:flex;
@@ -159,15 +225,22 @@ h3{font-size:14px;margin:20px 0 9px}
   justify-content:center;
   box-shadow:0 2px 6px #0002;
 }
-.map-wrap{
+
+/* ==========================
+   지도
+========================== */
+
+.map-wrap {
   position:relative;
   min-height:400px;
 }
-#map{
+
+#map {
   width:100%;
   height:100%;
 }
-.mapnote{
+
+.mapnote {
   position:absolute;
   left:15px;
   top:15px;
@@ -177,8 +250,11 @@ h3{font-size:14px;margin:20px 0 9px}
   border-radius:10px;
   font-size:12px;
   box-shadow:0 2px 10px #0001;
+  z-index:2;
+  pointer-events:none;
 }
-.add-floating{
+
+.add-floating {
   position:absolute;
   right:24px;
   bottom:25px;
@@ -187,165 +263,392 @@ h3{font-size:14px;margin:20px 0 9px}
   border:0;
   border-radius:50%;
   background:var(--blue);
-  color:white;
+  color:#fff;
   font-size:39px;
   box-shadow:0 5px 20px #0003;
+  z-index:3;
 }
-.category-banner{
+
+/* ==========================
+   확장형 지도 마커
+
+   핵심:
+   - 좌표 기준 중심 고정
+   - 내부 콘텐츠 중앙 정렬
+   - 양쪽 여백 동일
+   - 이름 길이에 따라 확장
+========================== */
+
+.living-marker {
+  position:absolute;
+
+  width:46px;
+  height:46px;
+
+  transform:translate(-50%,-50%);
+
+  cursor:pointer;
+  user-select:none;
+  -webkit-tap-highlight-color:transparent;
+
+  overflow:visible;
+}
+
+.living-marker-pill {
+  position:absolute;
+
+  left:50%;
+  top:50%;
+
+  transform:translate(-50%,-50%);
+
+  width:46px;
+  height:46px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  padding:0;
+
+  border:3px solid #fff;
+  border-radius:999px;
+
+  background:var(--marker-color,#2878d0);
+  color:#fff;
+
+  box-shadow:0 3px 9px #0003;
+
+  overflow:hidden;
+  white-space:nowrap;
+
+  transition:
+    width .32s cubic-bezier(.22,1,.36,1),
+    box-shadow .25s ease;
+
+  will-change:width;
+}
+
+.living-marker-inner {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  flex:0 0 auto;
+
+  width:max-content;
+  height:100%;
+
+  margin:0 auto;
+
+  gap:0;
+}
+
+.living-marker-icon {
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  flex:0 0 24px;
+
+  width:24px;
+  height:24px;
+}
+
+.living-marker-icon svg {
+  display:block;
+  width:24px;
+  height:24px;
+}
+
+.living-marker-name {
+  display:block;
+
+  width:0;
+  max-width:0;
+
+  overflow:hidden;
+  opacity:0;
+
+  font-family:Arial,"Noto Sans KR",sans-serif;
+  font-size:12px;
+  font-weight:700;
+  line-height:1.2;
+
+  white-space:nowrap;
+  text-overflow:ellipsis;
+
+  transition:
+    width .32s cubic-bezier(.22,1,.36,1),
+    max-width .32s cubic-bezier(.22,1,.36,1),
+    opacity .18s ease;
+}
+
+/*
+  마커 확장:
+  전체 너비 = 테두리 6px
+            + 좌우 여백 32px
+            + 아이콘 24px
+            + 간격 8px
+            + 텍스트 실제 너비
+
+  중앙 정렬은 flex + margin auto로 처리.
+*/
+
+.living-marker:hover .living-marker-pill,
+.living-marker.is-expanded .living-marker-pill {
+  width:var(--expanded-width,150px);
+
+  box-shadow:
+    0 5px 18px #0004,
+    0 0 0 3px var(--marker-glow,#2878d033);
+}
+
+.living-marker:hover .living-marker-inner,
+.living-marker.is-expanded .living-marker-inner {
+  gap:8px;
+}
+
+.living-marker:hover .living-marker-name,
+.living-marker.is-expanded .living-marker-name {
+  width:var(--text-width,100px);
+  max-width:var(--text-width,100px);
+  opacity:1;
+}
+
+.living-marker.is-selected .living-marker-pill {
+  outline:2px solid var(--marker-color,#2878d0);
+  outline-offset:2px;
+}
+
+.living-marker:focus-visible .living-marker-pill {
+  outline:3px solid #25354a;
+  outline-offset:3px;
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .living-marker-pill,
+  .living-marker-name,
+  .item {
+    transition:none;
+    animation:none;
+  }
+}
+
+/* ==========================
+   오른쪽 상세정보
+========================== */
+
+.category-banner {
   background:#f3f5f8;
   padding:15px;
   border-radius:13px;
   font-weight:bold;
   font-size:13px;
 }
-.edit-round{
+
+.edit-round {
   width:40px;
   height:40px;
   border-radius:50%;
   border:1px solid #e0e6ee;
-  background:white;
+  background:#fff;
   font-size:18px;
 }
-.route-card{
+
+.route-card {
   margin-top:15px;
   border:1px solid var(--line);
   border-radius:16px;
   padding:17px;
 }
-.route-card h3{margin:0 0 15px}
-.route-grid{
+
+.route-card h3 {
+  margin:0 0 15px;
+}
+
+.route-grid {
   display:grid;
   grid-template-columns:1fr 34px 1fr;
   gap:8px;
   align-items:center;
 }
-.route-box{
+
+.route-box {
   min-height:112px;
   padding:12px 7px;
-  background:white;
+  background:#fff;
   border:2px solid #e2e8ef;
   border-radius:13px;
   text-align:center;
 }
-.route-box.active{
+
+.route-box.active {
   background:#eff6ff;
   border-color:var(--blue);
 }
-.route-box small{
+
+.route-box small {
   display:block;
   color:var(--muted);
   font-size:11px;
   margin:8px 0;
 }
-.route-box strong{
+
+.route-box strong {
   font-size:12px;
   overflow-wrap:anywhere;
 }
-.swap{
+
+.swap {
   border:1px solid var(--line);
-  background:white;
+  background:#fff;
   border-radius:50%;
   width:34px;
   height:34px;
   font-size:19px;
 }
-.btn{
+
+.btn {
   border:0;
   padding:12px;
   background:var(--blue);
-  color:white;
+  color:#fff;
   border-radius:10px;
   font-weight:bold;
   font-size:12px;
 }
-.btn.secondary{
+
+.btn.secondary {
   background:#eef3f8;
   color:#41617f;
 }
-.btn.full{width:100%}
-.route-actions{
+
+.btn.full {
+  width:100%;
+}
+
+.route-actions {
   display:grid;
   grid-template-columns:90px 1fr;
   gap:8px;
   margin-top:12px;
 }
-.facts{
+
+.facts {
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
   margin:15px 0;
 }
-.fact{
+
+.fact {
   background:#f4f8fc;
   padding:13px;
   border-radius:12px;
 }
-.fact small{
+
+.fact small {
   display:block;
   font-size:11px;
   color:var(--muted);
   margin-bottom:8px;
 }
-.fact b{font-size:14px}
-.card{
+
+.fact b {
+  font-size:14px;
+}
+
+.card {
   border:1px solid var(--line);
   padding:13px;
   border-radius:12px;
   font-size:13px;
   line-height:1.7;
   overflow-wrap:anywhere;
+  white-space:pre-wrap;
 }
-.detail-content{margin-top:24px}
-.detail-content .tags{margin:12px 0}
-.hidden{display:none!important}
-.modal-overlay{
+
+.detail-content {
+  margin-top:24px;
+}
+
+.detail-content .tags {
+  margin:12px 0;
+}
+
+/* ==========================
+   장소 추가 및 편집 모달
+========================== */
+
+.modal-overlay {
   position:fixed;
   inset:0;
   z-index:1000;
   background:#18283b99;
+
   display:flex;
   align-items:center;
   justify-content:center;
+
   padding:14px;
 }
-.modal{
-  background:white;
+
+.modal {
+  background:#fff;
   border-radius:17px;
   padding:22px;
   width:min(560px,100%);
   max-height:94dvh;
   overflow-y:auto;
 }
-.modal h2{margin-bottom:7px}
-.field{margin:14px 0}
-.field label{
+
+.modal h2 {
+  margin-bottom:7px;
+}
+
+.field {
+  margin:14px 0;
+}
+
+.field label {
   display:block;
   font-size:12px;
   font-weight:bold;
   margin-bottom:7px;
 }
-.field input,.field select,.field textarea{
+
+.field input,
+.field select,
+.field textarea {
   display:block;
   width:100%;
   padding:12px;
   border:1px solid #dce3eb;
   border-radius:10px;
-  background:white;
+  background:#fff;
   outline:none;
 }
-.field textarea{min-height:85px;resize:vertical}
-.form-grid{
+
+.field textarea {
+  min-height:85px;
+  resize:vertical;
+}
+
+.form-grid {
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
 }
-.form-actions{
+
+.form-actions {
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:10px;
   margin-top:20px;
 }
-.pick-banner{
+
+.pick-banner {
   position:absolute;
   z-index:10;
   top:75px;
@@ -357,145 +660,255 @@ h3{font-size:14px;margin:20px 0 9px}
   border-radius:12px;
   font-size:13px;
 }
-@media(max-width:1000px){
-  .app{
+
+/* ==========================
+   반응형
+========================== */
+
+@media(max-width:1000px) {
+  .app {
     grid-template-columns:280px minmax(350px,1fr);
     height:auto;
   }
-  .sidebar{height:700px}
-  .map-wrap{height:700px}
-  .detail{
+
+  .sidebar {
+    height:700px;
+  }
+
+  .map-wrap {
+    height:700px;
+  }
+
+  .detail {
     grid-column:1/-1;
     border-top:1px solid var(--line);
   }
 }
-@media(max-width:650px){
-  .app{display:flex;flex-direction:column}
-  .sidebar{height:auto;max-height:480px}
-  .map-wrap{height:460px;min-height:460px}
-  .detail{padding:17px}
-  .form-grid{grid-template-columns:1fr}
+
+@media(max-width:650px) {
+  .app {
+    display:flex;
+    flex-direction:column;
+  }
+
+  .sidebar {
+    height:auto;
+    max-height:480px;
+  }
+
+  .map-wrap {
+    height:460px;
+    min-height:460px;
+  }
+
+  .detail {
+    padding:17px;
+  }
+
+  .form-grid {
+    grid-template-columns:1fr;
+  }
 }
 </style>
 </head>
+
 <body>
 
 <div class="app">
 
-<aside class="sidebar">
-  <h1>Monterrey Living Map</h1>
-  <div class="subtitle">몬테레이 주재원 주택 · 학교 · 생활 지도</div>
+  <aside class="sidebar">
 
-  <input
-    id="search"
-    class="search"
-    placeholder="주택, 학교, 병원, 식당 검색"
-  >
+    <h1>Monterrey Living Map</h1>
 
-  <div id="filters" class="filters"></div>
-
-  <div id="tagSection" class="tag-section hidden">
-    <div class="row" style="margin-bottom:10px">
-      <strong style="font-size:12px">주택 조건 필터</strong>
-      <button id="clearTags" class="small-btn">필터 초기화</button>
+    <div class="subtitle">
+      몬테레이 주재원 주택 · 학교 · 생활 지도
     </div>
-    <div id="housingFilters" class="tags"></div>
-    <p class="muted">
-      여러 조건을 선택하면 선택한 조건을 모두 만족하는 주택이 표시됩니다.
-    </p>
-  </div>
 
-  <div id="legend" class="legend"></div>
+    <input
+      id="search"
+      class="search"
+      placeholder="주택, 학교, 병원, 식당 검색"
+    >
 
-  <div class="row">
-    <p id="counter" class="muted">장소 불러오는 중...</p>
-    <button id="refreshBtn" class="small-btn">↻ 새로고침</button>
-  </div>
+    <div id="filters" class="filters"></div>
 
-  <div id="syncStatus" class="status">Supabase 연결 준비 중...</div>
-  <div id="list"></div>
-</aside>
+    <div id="tagSection" class="tag-section hidden">
 
-<main class="map-wrap">
-  <div id="map"></div>
+      <div class="row" style="margin-bottom:10px">
+        <strong style="font-size:12px">
+          주택 조건 필터
+        </strong>
 
-  <div id="mapnote" class="mapnote">
-    Google Maps · 카테고리별 픽토그램으로 장소를 표시합니다.
-  </div>
+        <button id="clearTags" class="small-btn">
+          필터 초기화
+        </button>
+      </div>
 
-  <div id="pickBanner" class="pick-banner hidden">
-    <strong>📍 위치 선택 중</strong>
-    <p>지도에서 장소의 정확한 위치를 눌러주세요.</p>
-    <button id="cancelPick" class="small-btn">취소</button>
-  </div>
+      <div id="housingFilters" class="tags"></div>
 
-  <button
-    id="addFloating"
-    class="add-floating"
-    title="새 장소 추가"
-  >+</button>
-</main>
+      <p class="muted">
+        여러 조건을 선택하면 선택한 조건을 모두
+        만족하는 주택이 표시됩니다.
+      </p>
 
-<aside class="detail">
-  <div class="row">
-    <div id="categoryBanner" class="category-banner" style="flex:1">
-      장소를 선택해 주세요
     </div>
-    <button id="editRound" class="edit-round hidden" title="장소 편집">
-      ✎
-    </button>
-  </div>
 
-  <div class="route-card">
-    <h3>🚗 차량 길찾기</h3>
+    <div id="legend" class="legend"></div>
 
-    <div class="route-grid">
-      <button id="originBox" class="route-box active">
-        🔵 출발지
-        <small>선택한 장소</small>
-        <strong id="originName">선택해 주세요</strong>
-      </button>
+    <div class="row">
+      <p id="counter" class="muted">
+        장소 불러오는 중...
+      </p>
 
-      <button id="swapBtn" class="swap" title="출발지와 도착지 교환">
-        ⇄
-      </button>
-
-      <button id="destinationBox" class="route-box">
-        🟢 도착지
-        <small>선택한 장소</small>
-        <strong id="destinationName">선택해 주세요</strong>
+      <button id="refreshBtn" class="small-btn">
+        ↻ 새로고침
       </button>
     </div>
 
-    <p id="routeHint" class="muted">
-      출발지 선택 중 · 장소를 눌러주세요.
-    </p>
-
-    <div class="route-actions">
-      <button id="resetRoute" class="btn secondary">초기화</button>
-      <button id="routeBtn" class="btn" disabled>
-        Google Maps 길찾기
-      </button>
+    <div id="syncStatus" class="status">
+      Supabase 연결 준비 중...
     </div>
 
-    <p class="muted">
-      출발지·도착지 박스를 누른 다음 목록이나 지도 마커를 선택하세요.
-    </p>
-  </div>
+    <div id="list"></div>
 
-  <div id="detailContent" class="detail-content">
-    <h2>장소를 선택하세요</h2>
-    <p class="muted">선택한 장소의 상세정보가 표시됩니다.</p>
-  </div>
-</aside>
+  </aside>
+
+  <main class="map-wrap">
+
+    <div id="map"></div>
+
+    <div id="mapnote" class="mapnote">
+      Google Maps · 카테고리별 픽토그램으로
+      장소를 표시합니다.
+    </div>
+
+    <div id="pickBanner" class="pick-banner hidden">
+
+      <strong>📍 위치 선택 중</strong>
+
+      <p>
+        지도에서 장소의 정확한 위치를 눌러주세요.
+      </p>
+
+      <button id="cancelPick" class="small-btn">
+        취소
+      </button>
+
+    </div>
+
+    <button
+      id="addFloating"
+      class="add-floating"
+      title="새 장소 추가"
+    >+</button>
+
+  </main>
+
+  <aside class="detail">
+
+    <div class="row">
+
+      <div
+        id="categoryBanner"
+        class="category-banner"
+        style="flex:1"
+      >
+        장소를 선택해 주세요
+      </div>
+
+      <button
+        id="editRound"
+        class="edit-round hidden"
+        title="장소 편집"
+      >✎</button>
+
+    </div>
+
+    <div class="route-card">
+
+      <h3>🚗 차량 길찾기</h3>
+
+      <div class="route-grid">
+
+        <button id="originBox" class="route-box active">
+          🔵 출발지
+
+          <small>선택한 장소</small>
+
+          <strong id="originName">
+            선택해 주세요
+          </strong>
+        </button>
+
+        <button id="swapBtn" class="swap" title="출발지와 도착지 교환">
+          ⇄
+        </button>
+
+        <button id="destinationBox" class="route-box">
+          🟢 도착지
+
+          <small>선택한 장소</small>
+
+          <strong id="destinationName">
+            선택해 주세요
+          </strong>
+        </button>
+
+      </div>
+
+      <p id="routeHint" class="muted">
+        출발지 선택 중 · 장소를 눌러주세요.
+      </p>
+
+      <div class="route-actions">
+
+        <button id="resetRoute" class="btn secondary">
+          초기화
+        </button>
+
+        <button id="routeBtn" class="btn" disabled>
+          Google Maps 길찾기
+        </button>
+
+      </div>
+
+      <p class="muted">
+        출발지·도착지 박스를 누른 다음
+        목록이나 지도 마커를 선택하세요.
+      </p>
+
+    </div>
+
+    <div id="detailContent" class="detail-content">
+
+      <h2>장소를 선택하세요</h2>
+
+      <p class="muted">
+        선택한 장소의 상세정보가 표시됩니다.
+      </p>
+
+    </div>
+
+  </aside>
 
 </div>
 
+<!-- 장소 추가 / 편집 -->
+
 <div id="modalOverlay" class="modal-overlay hidden">
+
   <div class="modal">
+
     <div class="row">
-      <h2 id="modalTitle">새 장소 추가</h2>
-      <button id="closeModal" class="small-btn">✕</button>
+
+      <h2 id="modalTitle">
+        새 장소 추가
+      </h2>
+
+      <button id="closeModal" class="small-btn">
+        ✕
+      </button>
+
     </div>
 
     <p id="modalIntro" class="muted">
@@ -503,7 +916,9 @@ h3{font-size:14px;margin:20px 0 9px}
     </p>
 
     <div class="field">
+
       <label>카테고리 *</label>
+
       <select id="newCategory">
         <option value="home">주택</option>
         <option value="school">학교</option>
@@ -511,15 +926,25 @@ h3{font-size:14px;margin:20px 0 9px}
         <option value="hospital">병원</option>
         <option value="restaurant">식당</option>
       </select>
+
     </div>
 
     <div class="field">
+
       <label>장소 이름 *</label>
-      <input id="newName" maxlength="100" placeholder="예: SAQQARA">
+
+      <input
+        id="newName"
+        maxlength="100"
+        placeholder="예: SAQQARA"
+      >
+
     </div>
 
     <div class="field">
+
       <label>지역 *</label>
+
       <select id="newArea">
         <option value="">지역 선택</option>
         <option value="Santa Catarina">Santa Catarina</option>
@@ -528,12 +953,19 @@ h3{font-size:14px;margin:20px 0 9px}
         <option value="Carretera Nacional">Carretera Nacional</option>
         <option value="Apodaca">Apodaca</option>
       </select>
+
     </div>
 
     <div id="homeFields">
+
       <div class="form-grid">
+
         <div class="field">
-          <label>평균 임대료 · 방 2개 (MXN/월)</label>
+
+          <label>
+            평균 임대료 · 방 2개 (MXN/월)
+          </label>
+
           <input
             id="newRent2"
             type="number"
@@ -541,9 +973,15 @@ h3{font-size:14px;margin:20px 0 9px}
             max="10000000"
             placeholder="예: 35000"
           >
+
         </div>
+
         <div class="field">
-          <label>평균 임대료 · 방 3개 (MXN/월)</label>
+
+          <label>
+            평균 임대료 · 방 3개 (MXN/월)
+          </label>
+
           <input
             id="newRent3"
             type="number"
@@ -551,53 +989,86 @@ h3{font-size:14px;margin:20px 0 9px}
             max="10000000"
             placeholder="예: 45000"
           >
+
         </div>
+
       </div>
 
       <div class="field">
-        <label>주택 추천 필터 (복수 선택 가능)</label>
+
+        <label>
+          주택 추천 필터 (복수 선택 가능)
+        </label>
+
         <div id="editHousingTags" class="tags"></div>
+
       </div>
 
       <div class="field">
+
         <label>건물 구성 / 주택 유형</label>
-        <input id="newBuildings" placeholder="예: T1 / T2">
+
+        <input
+          id="newBuildings"
+          placeholder="예: T1 / T2"
+        >
+
       </div>
 
       <div class="field">
+
         <label>편의시설</label>
+
         <textarea
           id="newAmenities"
           placeholder="예: 수영장, 헬스장, 키즈룸"
         ></textarea>
+
       </div>
+
     </div>
 
     <div class="field">
+
       <label>특징 및 참고사항</label>
+
       <textarea
         id="newNote"
         placeholder="주택 특징, 통학, 교통, 주의사항 등"
       ></textarea>
+
     </div>
 
     <div class="field">
+
       <label>지도 위치 *</label>
+
       <p id="locationStatus" class="muted">
         지도에서 위치를 선택해 주세요.
       </p>
+
       <button id="pickNew" class="btn secondary full">
         📍 지도에서 위치 선택
       </button>
+
     </div>
 
     <p id="modalStatus" class="muted"></p>
 
     <div class="form-actions">
-      <button id="cancelModal" class="btn secondary">취소</button>
-      <button id="saveNew" class="btn">저장하기</button>
+
+      <button id="cancelModal" class="btn secondary">
+        취소
+      </button>
+
+      <button id="saveNew" class="btn">
+        저장하기
+      </button>
+
     </div>
+
   </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -605,9 +1076,9 @@ h3{font-size:14px;margin:20px 0 9px}
 <script>
 "use strict";
 
-/* ===============================
-   1. 서비스 설정
-================================ */
+/* ======================================
+   1. Supabase 설정
+====================================== */
 
 const SUPABASE_URL =
   "https://hmxvihhknmkhgjcssdtf.supabase.co";
@@ -622,28 +1093,32 @@ const db = window.supabase.createClient(
 
 const $ = id => document.getElementById(id);
 
+/* ======================================
+   2. 카테고리
+====================================== */
+
 const categories = {
-  all: {
+  all:{
     label:"전체",
     color:"#64748b"
   },
-  home: {
+  home:{
     label:"주택",
     color:"#2878d0"
   },
-  school: {
+  school:{
     label:"학교",
     color:"#e69a22"
   },
-  market: {
+  market:{
     label:"마트·쇼핑",
     color:"#32986c"
   },
-  hospital: {
+  hospital:{
     label:"병원",
     color:"#d95463"
   },
-  restaurant: {
+  restaurant:{
     label:"식당",
     color:"#9364c7"
   }
@@ -660,7 +1135,15 @@ const housingTags = [
   "까사"
 ];
 
+/* ======================================
+   3. 픽토그램
+
+   병원 아이콘:
+   닫힌 십자가 SVG 경로 사용
+====================================== */
+
 const iconPaths = {
+
   home:
     '<path d="M3 10.5 12 3l9 7.5"/>' +
     '<path d="M5 9.5V21h14V9.5"/>' +
@@ -677,80 +1160,15 @@ const iconPaths = {
     '<path d="M2 3h3l3 12h12l2-9H6"/>',
 
   hospital:
-    '<path d="M10 3h4v7h7v4h-7v7h-4v-7H3v-4h7z"/>',
+    '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3z"/>',
 
   restaurant:
     '<path d="M4 3v7a3 3 0 0 0 6 0V3"/>' +
     '<path d="M7 3v18M16 21V3c4 2 5 6 5 10h-5"/>'
+
 };
 
-/* ===============================
-   2. 상태 관리
-================================ */
-
-let places = [];
-let map = null;
-let markers = new Map();
-
-let selectedId = null;
-let activeCategory = "all";
-let activeTags = [];
-
-let routeMode = "origin";
-let routeOrigin = null;
-let routeDestination = null;
-
-let editingId = null;
-let pendingLocation = null;
-let pickMode = false;
-
-let loading = false;
-let saving = false;
-
-/* ===============================
-   3. 공통 함수
-================================ */
-
-function esc(value){
-  return String(value ?? "").replace(
-    /[&<>"']/g,
-    c => ({
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c])
-  );
-}
-
-function validCoord(p){
-  if(!p || p.lat == null || p.lng == null){
-    return false;
-  }
-
-  const lat = Number(p.lat);
-  const lng = Number(p.lng);
-
-  return Number.isFinite(lat) &&
-    Number.isFinite(lng) &&
-    lat >= -90 && lat <= 90 &&
-    lng >= -180 && lng <= 180;
-}
-
-function getPlace(id){
-  return places.find(p => p.id === id);
-}
-
-function money(value){
-  if(value == null || value === ""){
-    return "미등록";
-  }
-
-  return "$" + Number(value).toLocaleString() + " MXN";
-}
-
-function iconSVG(type,size=24){
+function iconSVG(type,size=24) {
   return `
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -768,14 +1186,91 @@ function iconSVG(type,size=24){
   `;
 }
 
-function setStatus(text,error=false){
+/* ======================================
+   4. 앱 상태
+====================================== */
+
+let places = [];
+let map = null;
+
+let markers = new Map();
+let LivingMarkerClass = null;
+
+const markerExpandTimers = new Map();
+
+let selectedId = null;
+let mapHighlightedId = null;
+
+let activeCategory = "all";
+let activeTags = [];
+
+let routeMode = "origin";
+let routeOrigin = null;
+let routeDestination = null;
+
+let editingId = null;
+let pendingLocation = null;
+let pickMode = false;
+
+let loading = false;
+let saving = false;
+
+/* ======================================
+   5. 공통 함수
+====================================== */
+
+function esc(value) {
+  return String(value ?? "").replace(
+    /[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    }[c])
+  );
+}
+
+function validCoord(p) {
+  if (!p || p.lat == null || p.lng == null) {
+    return false;
+  }
+
+  const lat = Number(p.lat);
+  const lng = Number(p.lng);
+
+  return Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180;
+}
+
+function getPlace(id) {
+  return places.find(p => p.id === id);
+}
+
+function money(value) {
+  if (value == null || value === "") {
+    return "미등록";
+  }
+
+  return "$" +
+    Number(value).toLocaleString() +
+    " MXN";
+}
+
+function setStatus(text,error=false) {
   const el = $("syncStatus");
+
   el.textContent = text;
   el.className = "status" + (error ? " error" : "");
 }
 
-function makeId(){
-  if(window.crypto && crypto.randomUUID){
+function makeId() {
+  if (window.crypto && crypto.randomUUID) {
     return "C-" + crypto.randomUUID();
   }
 
@@ -784,19 +1279,21 @@ function makeId(){
   );
 }
 
-/* ===============================
-   4. Supabase 데이터 조회
-================================ */
+/* ======================================
+   6. Supabase 장소 조회
+====================================== */
 
-async function loadData(){
-  if(loading || saving) return;
+async function loadData() {
+  if (loading || saving) return;
 
   loading = true;
+
   $("refreshBtn").disabled = true;
 
   setStatus("Supabase 장소 정보를 불러오는 중...");
 
-  try{
+  try {
+
     const {data,error} = await db
       .from("map_places")
       .select(
@@ -804,14 +1301,18 @@ async function loadData(){
         "rent_2br,rent_3br,buildings,amenities," +
         "note,housing_tags,source,created_at"
       )
-      .order("created_at",{ascending:true})
+      .order("created_at",{
+        ascending:true
+      })
       .limit(1000);
 
-    if(error) throw error;
+    if (error) throw error;
 
     places = (data || [])
-      .filter(p => categories[p.category] &&
-        p.category !== "all")
+      .filter(p =>
+        categories[p.category] &&
+        p.category !== "all"
+      )
       .map(p => ({
         ...p,
         type:p.category,
@@ -820,16 +1321,20 @@ async function loadData(){
           : []
       }));
 
-    if(selectedId && !getPlace(selectedId)){
+    if (selectedId && !getPlace(selectedId)) {
       selectedId = null;
     }
 
-    if(routeOrigin && !getPlace(routeOrigin)){
+    if (routeOrigin && !getPlace(routeOrigin)) {
       routeOrigin = null;
     }
 
-    if(routeDestination && !getPlace(routeDestination)){
+    if (routeDestination && !getPlace(routeDestination)) {
       routeDestination = null;
+    }
+
+    if (mapHighlightedId && !getPlace(mapHighlightedId)) {
+      mapHighlightedId = null;
     }
 
     render();
@@ -839,7 +1344,8 @@ async function loadData(){
       places.length + "개"
     );
 
-  }catch(error){
+  } catch(error) {
+
     console.error(error);
 
     setStatus(
@@ -848,37 +1354,32 @@ async function loadData(){
       true
     );
 
-  }finally{
+  } finally {
+
     loading = false;
     $("refreshBtn").disabled = false;
+
   }
 }
 
-/*
-  자동 조회 최적화:
-  - 최초 접속 시 1회
-  - 저장 직후 1회
-  - 수동 새로고침 시 1회
-
-  20초 setInterval 사용하지 않음.
-*/
-
 $("refreshBtn").onclick = loadData;
 
-/* ===============================
-   5. 검색 및 필터
-================================ */
+/* ======================================
+   7. 검색 및 카테고리 필터
+====================================== */
 
-function visiblePlaces(){
+function visiblePlaces() {
+
   const q = $("search").value
     .trim()
     .toLowerCase();
 
   return places.filter(p => {
-    if(
+
+    if (
       activeCategory !== "all" &&
       p.type !== activeCategory
-    ){
+    ) {
       return false;
     }
 
@@ -891,11 +1392,14 @@ function visiblePlaces(){
       ...(p.housing_tags || [])
     ].join(" ").toLowerCase();
 
-    if(q && !searchText.includes(q)){
+    if (q && !searchText.includes(q)) {
       return false;
     }
 
-    if(activeCategory === "home" && activeTags.length){
+    if (
+      activeCategory === "home" &&
+      activeTags.length
+    ) {
       return activeTags.every(tag =>
         (p.housing_tags || []).includes(tag)
       );
@@ -905,25 +1409,33 @@ function visiblePlaces(){
   });
 }
 
-function renderFilters(){
+function renderFilters() {
+
   $("filters").innerHTML =
-    Object.entries(categories).map(([key,value]) => `
-      <button
-        class="chip ${activeCategory === key ? "active" : ""}"
-        data-category="${key}"
-      >
-        ${value.label}
-      </button>
-    `).join("");
+    Object.entries(categories)
+      .map(([key,value]) => `
+        <button
+          class="chip ${
+            activeCategory === key ? "active" : ""
+          }"
+          data-category="${key}"
+        >
+          ${value.label}
+        </button>
+      `).join("");
 
   document.querySelectorAll("[data-category]")
     .forEach(button => {
+
       button.onclick = () => {
+
         activeCategory = button.dataset.category;
 
-        if(activeCategory !== "home"){
+        if (activeCategory !== "home") {
           activeTags = [];
         }
+
+        mapHighlightedId = null;
 
         render();
       };
@@ -937,7 +1449,9 @@ function renderFilters(){
   $("housingFilters").innerHTML =
     housingTags.map(tag => `
       <button
-        class="tag ${activeTags.includes(tag) ? "active" : ""}"
+        class="tag ${
+          activeTags.includes(tag) ? "active" : ""
+        }"
         data-tag="${esc(tag)}"
       >
         ${esc(tag)}
@@ -946,12 +1460,16 @@ function renderFilters(){
 
   document.querySelectorAll("[data-tag]")
     .forEach(button => {
+
       button.onclick = () => {
+
         const tag = button.dataset.tag;
 
         activeTags = activeTags.includes(tag)
           ? activeTags.filter(x => x !== tag)
           : [...activeTags,tag];
+
+        mapHighlightedId = null;
 
         render();
       };
@@ -963,7 +1481,8 @@ $("clearTags").onclick = () => {
   render();
 };
 
-function renderLegend(){
+function renderLegend() {
+
   $("legend").innerHTML =
     Object.entries(categories)
       .filter(([key]) => key !== "all")
@@ -978,152 +1497,530 @@ function renderLegend(){
       `).join("");
 }
 
-/* ===============================
-   6. 장소 목록
-================================ */
+/* ======================================
+   8. 왼쪽 장소 목록
+====================================== */
 
-function renderList(){
+function renderList() {
+
   const rows = visiblePlaces();
 
   $("counter").textContent =
-    rows.length + "개 장소 · 지도 표시 " +
-    rows.filter(validCoord).length + "개";
+    rows.length +
+    "개 장소 · 지도 표시 " +
+    rows.filter(validCoord).length +
+    "개";
 
-  $("list").innerHTML = rows.map(p => `
-    <button
-      class="item ${selectedId === p.id ? "active" : ""}"
-      data-place="${esc(p.id)}"
-    >
-      <span
-        class="pin"
-        style="background:${categories[p.type].color}"
+  $("list").innerHTML = rows.map(p => {
+
+    const isMapSelected =
+      mapHighlightedId === p.id;
+
+    const color = categories[p.type].color;
+
+    return `
+      <button
+        class="item
+          ${selectedId === p.id ? "active" : ""}
+          ${isMapSelected ? "map-selected" : ""}
+        "
+        data-place="${esc(p.id)}"
+        style="
+          --selected-color:${color};
+          --selected-glow:${color}55;
+          --selected-bg:${color}14;
+        "
       >
-        ${iconSVG(p.type,23)}
-      </span>
 
-      <span>
-        <strong>${esc(p.name)}</strong>
-        <small>
-          ${esc(p.id.startsWith("C-") ? "추가 장소" : p.id)}
-          · ${categories[p.type].label}
-          ${routeOrigin === p.id ? " · 🔵 출발" : ""}
-          ${routeDestination === p.id ? " · 🟢 도착" : ""}
-        </small>
-      </span>
-    </button>
-  `).join("") ||
+        <span
+          class="pin"
+          style="background:${color}"
+        >
+          ${iconSVG(p.type,23)}
+        </span>
+
+        <span>
+
+          <strong>
+            ${esc(p.name)}
+          </strong>
+
+          <small>
+            ${
+              esc(
+                p.id.startsWith("C-")
+                  ? "추가 장소"
+                  : p.id
+              )
+            }
+            · ${categories[p.type].label}
+
+            ${
+              routeOrigin === p.id
+                ? " · 🔵 출발"
+                : ""
+            }
+
+            ${
+              routeDestination === p.id
+                ? " · 🟢 도착"
+                : ""
+            }
+          </small>
+
+        </span>
+
+      </button>
+    `;
+  }).join("") ||
     '<p class="muted">검색 결과가 없습니다.</p>';
 
   document.querySelectorAll("[data-place]")
     .forEach(button => {
-      button.onclick = () =>
-        selectPlace(button.dataset.place);
+
+      button.onclick = () => {
+        selectPlace(button.dataset.place,false);
+      };
+
     });
 }
 
-/* ===============================
-   7. Google Maps 마커
-================================ */
+/* ======================================
+   9. HTML 기반 지도 마커
 
-function markerIcon(p){
-  const color = categories[p.type].color;
+   원형 → 둥근 직사각형
 
-  const ring =
-    routeOrigin === p.id
-      ? "#2878d0"
-      : routeDestination === p.id
-        ? "#32986c"
-        : "#ffffff";
+   실제 텍스트 너비 측정
 
-  const svg = `
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="52"
-      height="52"
-      viewBox="0 0 52 52"
-    >
-      <circle
-        cx="26"
-        cy="26"
-        r="21"
-        fill="${color}"
-        stroke="${ring}"
-        stroke-width="4"
-      />
-      <g
-        transform="translate(14 14)"
-        fill="none"
-        stroke="white"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        ${iconPaths[p.type] || iconPaths.home}
-      </g>
-    </svg>
-  `;
+   좌우 동일 여백
 
-  return {
-    url:"data:image/svg+xml;charset=UTF-8," +
-      encodeURIComponent(svg),
-    scaledSize:new google.maps.Size(46,46),
-    anchor:new google.maps.Point(23,23)
-  };
-}
+   중앙 기준으로 양쪽 확장
+====================================== */
 
-function syncMarkers(){
-  if(!map) return;
+function getLivingMarkerClass() {
 
-  markers.forEach(marker => marker.setMap(null));
-  markers.clear();
+  if (LivingMarkerClass) {
+    return LivingMarkerClass;
+  }
 
-  visiblePlaces().forEach(p => {
-    if(!validCoord(p)) return;
+  LivingMarkerClass =
+    class LivingMarker extends google.maps.OverlayView {
 
-    const marker = new google.maps.Marker({
-      map,
-      position:{
-        lat:Number(p.lat),
-        lng:Number(p.lng)
-      },
-      title:p.name,
-      icon:markerIcon(p),
-      zIndex:
-        routeOrigin === p.id ||
-        routeDestination === p.id
-          ? 100
-          : 1
-    });
+      constructor(place) {
 
-    marker.addListener("click",() => {
-      if(pickMode){
-        handleMapPick({
-          lat:() => Number(p.lat),
-          lng:() => Number(p.lng)
-        });
-      }else{
-        selectPlace(p.id);
+        super();
+
+        this.place = place;
+        this.element = null;
+
+        this.position = new google.maps.LatLng(
+          Number(place.lat),
+          Number(place.lng)
+        );
+
+        this.setMap(map);
       }
-    });
 
-    markers.set(p.id,marker);
+      onAdd() {
+
+        const p = this.place;
+        const color = categories[p.type].color;
+
+        const wrapper =
+          document.createElement("div");
+
+        wrapper.className = "living-marker";
+
+        wrapper.style.setProperty(
+          "--marker-color",
+          color
+        );
+
+        wrapper.style.setProperty(
+          "--marker-glow",
+          color + "33"
+        );
+
+        const pill =
+          document.createElement("div");
+
+        pill.className = "living-marker-pill";
+
+        const inner =
+          document.createElement("div");
+
+        inner.className = "living-marker-inner";
+
+        const icon =
+          document.createElement("span");
+
+        icon.className = "living-marker-icon";
+        icon.innerHTML = iconSVG(p.type,24);
+
+        const name =
+          document.createElement("span");
+
+        name.className = "living-marker-name";
+        name.textContent = p.name;
+
+        inner.append(icon,name);
+        pill.appendChild(inner);
+        wrapper.appendChild(pill);
+
+        this.element = wrapper;
+
+        /*
+          텍스트의 실제 너비를 계산한다.
+
+          단순 글자 수가 아니라 브라우저가
+          렌더링하는 글자 폭을 기준으로 한다.
+        */
+
+        const canvas =
+          document.createElement("canvas");
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.font =
+          '700 12px Arial,"Noto Sans KR",sans-serif';
+
+        const measuredTextWidth =
+          ctx.measureText(p.name).width;
+
+        const textWidth = Math.min(
+          Math.ceil(measuredTextWidth) + 2,
+          280
+        );
+
+        /*
+          마커 너비 계산
+
+          아이콘: 24px
+          아이콘과 이름 간격: 8px
+          좌우 여백: 각각 16px
+          테두리: 좌우 각각 3px
+
+          아이콘 + 이름 그룹 전체가
+          가운데 위치하도록 한다.
+        */
+
+        const iconWidth = 24;
+        const gap = 8;
+        const sidePadding = 16;
+        const borderWidth = 3;
+
+        const expandedWidth = Math.max(
+          76,
+          iconWidth +
+          gap +
+          textWidth +
+          sidePadding * 2 +
+          borderWidth * 2
+        );
+
+        wrapper.style.setProperty(
+          "--text-width",
+          textWidth + "px"
+        );
+
+        wrapper.style.setProperty(
+          "--expanded-width",
+          expandedWidth + "px"
+        );
+
+        wrapper.title = p.name;
+
+        wrapper.setAttribute(
+          "role",
+          "button"
+        );
+
+        wrapper.setAttribute(
+          "tabindex",
+          "0"
+        );
+
+        wrapper.setAttribute(
+          "aria-label",
+          p.name + " 장소 선택"
+        );
+
+        wrapper.addEventListener(
+          "mouseenter",
+          () => {
+            if (!pickMode) {
+              this.expand();
+            }
+          }
+        );
+
+        wrapper.addEventListener(
+          "mouseleave",
+          () => {
+            this.collapse();
+          }
+        );
+
+        wrapper.addEventListener(
+          "click",
+          event => {
+
+            event.stopPropagation();
+
+            if (pickMode) {
+
+              handleMapPick({
+                lat:() => Number(p.lat),
+                lng:() => Number(p.lng)
+              });
+
+              return;
+            }
+
+            selectPlace(p.id,true);
+
+            const current = markers.get(p.id);
+
+            if (current) {
+              current.expandFor(2200);
+            }
+          }
+        );
+
+        wrapper.addEventListener(
+          "keydown",
+          event => {
+
+            if (
+              event.key === "Enter" ||
+              event.key === " "
+            ) {
+              event.preventDefault();
+              wrapper.click();
+            }
+          }
+        );
+
+        /*
+          Google Maps 클릭/호버 가능한
+          오버레이 영역에 마커 배치
+        */
+
+        this.getPanes()
+          .overlayMouseTarget
+          .appendChild(wrapper);
+      }
+
+      draw() {
+
+        if (!this.element) return;
+
+        const projection =
+          this.getProjection();
+
+        if (!projection) return;
+
+        const point =
+          projection.fromLatLngToDivPixel(
+            this.position
+          );
+
+        if (!point) return;
+
+        /*
+          좌표의 정중앙에 마커를 고정한다.
+
+          확장 시 좌우로 동일하게 늘어난다.
+        */
+
+        this.element.style.left =
+          point.x + "px";
+
+        this.element.style.top =
+          point.y + "px";
+      }
+
+      onRemove() {
+
+        if (this.element) {
+          this.element.remove();
+          this.element = null;
+        }
+      }
+
+      expand() {
+
+        if (this.element) {
+
+          this.element.classList.add(
+            "is-expanded"
+          );
+
+          this.element.style.zIndex = "2000";
+        }
+      }
+
+      collapse() {
+
+        if (this.element) {
+
+          this.element.classList.remove(
+            "is-expanded"
+          );
+
+          this.element.style.zIndex =
+            selectedId === this.place.id
+              ? "1000"
+              : "1";
+        }
+      }
+
+      expandFor(milliseconds=2200) {
+
+        this.expand();
+
+        clearTimeout(
+          markerExpandTimers.get(this.place.id)
+        );
+
+        const timer = setTimeout(() => {
+
+          this.collapse();
+
+          markerExpandTimers.delete(
+            this.place.id
+          );
+
+        },milliseconds);
+
+        markerExpandTimers.set(
+          this.place.id,
+          timer
+        );
+      }
+
+      setSelected(selected) {
+
+        if (this.element) {
+
+          this.element.classList.toggle(
+            "is-selected",
+            selected
+          );
+
+          this.element.style.zIndex =
+            selected ? "1000" : "1";
+        }
+      }
+    };
+
+  return LivingMarkerClass;
+}
+
+/* ======================================
+   10. 지도 마커 생성 및 업데이트
+====================================== */
+
+function syncMarkers() {
+
+  if (!map) return;
+
+  const visible = visiblePlaces()
+    .filter(validCoord);
+
+  const visibleIds = new Set(
+    visible.map(p => p.id)
+  );
+
+  /*
+    화면에서 제외된 마커만 제거.
+
+    기존 마커는 유지하여 호버 애니메이션이
+    불필요하게 초기화되지 않도록 한다.
+  */
+
+  for (const [id,marker] of markers) {
+
+    if (!visibleIds.has(id)) {
+
+      clearTimeout(
+        markerExpandTimers.get(id)
+      );
+
+      markerExpandTimers.delete(id);
+
+      marker.setMap(null);
+      markers.delete(id);
+    }
+  }
+
+  const MarkerClass =
+    getLivingMarkerClass();
+
+  visible.forEach(p => {
+
+    let marker = markers.get(p.id);
+
+    const needsRebuild =
+      marker &&
+      (
+        marker.place.name !== p.name ||
+        marker.place.type !== p.type ||
+        Number(marker.place.lat) !== Number(p.lat) ||
+        Number(marker.place.lng) !== Number(p.lng)
+      );
+
+    if (needsRebuild) {
+
+      clearTimeout(
+        markerExpandTimers.get(p.id)
+      );
+
+      markerExpandTimers.delete(p.id);
+
+      marker.setMap(null);
+      markers.delete(p.id);
+
+      marker = null;
+    }
+
+    if (!marker) {
+
+      marker = new MarkerClass(p);
+      markers.set(p.id,marker);
+    }
+
+    marker.setSelected(
+      selectedId === p.id
+    );
   });
 }
 
-function initMap(){
-  map = new google.maps.Map($("map"),{
-    center:{
-      lat:25.65,
-      lng:-100.345
-    },
-    zoom:11,
-    mapTypeControl:false,
-    streetViewControl:false,
-    fullscreenControl:true
-  });
+/* ======================================
+   11. Google Maps 초기화
+====================================== */
+
+function initMap() {
+
+  map = new google.maps.Map(
+    $("map"),
+    {
+      center:{
+        lat:25.65,
+        lng:-100.345
+      },
+
+      zoom:11,
+
+      mapTypeControl:false,
+      streetViewControl:false,
+      fullscreenControl:true
+    }
+  );
 
   map.addListener("click",event => {
-    if(pickMode){
+
+    if (pickMode) {
       handleMapPick(event.latLng);
     }
   });
@@ -1134,109 +2031,164 @@ function initMap(){
 window.initMap = initMap;
 
 window.gm_authFailure = () => {
+
   $("mapnote").textContent =
     "Google Maps API 키 또는 허용 도메인을 확인하세요.";
 };
 
-/* ===============================
-   8. 장소 상세정보
-================================ */
+/* ======================================
+   12. 상세정보
+====================================== */
 
-function mapSearchURL(p){
+function mapSearchURL(p) {
+
   const query = validCoord(p)
     ? p.lat + "," + p.lng
     : p.query ||
-      p.name + " " + (p.area || "") +
+      p.name + " " +
+      (p.area || "") +
       " Nuevo León México";
 
-  return "https://www.google.com/maps/search/?api=1&query=" +
-    encodeURIComponent(query);
+  return (
+    "https://www.google.com/maps/search/?api=1&query=" +
+    encodeURIComponent(query)
+  );
 }
 
-function renderDetail(){
+function renderDetail() {
+
   const p = getPlace(selectedId);
 
   $("categoryBanner").textContent = p
     ? categories[p.type].label
     : "장소를 선택해 주세요";
 
-  $("editRound").classList.toggle("hidden",!p);
+  $("editRound").classList.toggle(
+    "hidden",
+    !p
+  );
 
-  if(!p){
+  if (!p) {
+
     $("detailContent").innerHTML = `
       <h2>장소를 선택하세요</h2>
+
       <p class="muted">
         선택한 장소의 상세정보가 여기에 표시됩니다.
       </p>
     `;
+
     return;
   }
 
   let rentHTML = "";
 
-  if(p.type === "home"){
+  if (p.type === "home") {
+
     rentHTML = `
       <div class="facts">
+
         <div class="fact">
           <small>평균 임대료 · 방 2개</small>
           <b>${money(p.rent_2br)}</b>
         </div>
+
         <div class="fact">
           <small>평균 임대료 · 방 3개</small>
           <b>${money(p.rent_3br)}</b>
         </div>
+
       </div>
     `;
   }
 
   const tagsHTML =
-    p.type === "home" && p.housing_tags.length
+    p.type === "home" &&
+    p.housing_tags.length
+
       ? `
         <h3>주택 추천 조건</h3>
+
         <div class="tags">
+
           ${p.housing_tags.map(tag =>
-            `<span class="tag active">${esc(tag)}</span>`
+            `<span class="tag active">
+              ${esc(tag)}
+            </span>`
           ).join("")}
+
         </div>
       `
+
       : "";
 
   $("detailContent").innerHTML = `
+
     <h2>${esc(p.name)}</h2>
 
     <p class="muted">
       ${esc(p.area || "지역 정보 없음")}
-      · ${esc(p.id.startsWith("C-") ? "추가 장소" : p.id)}
+      ·
+      ${
+        esc(
+          p.id.startsWith("C-")
+            ? "추가 장소"
+            : p.id
+        )
+      }
     </p>
 
     ${rentHTML}
 
     ${tagsHTML}
 
-    ${p.buildings ? `
-      <h3>단지 구성 / 주택 유형</h3>
-      <div class="card">${esc(p.buildings)}</div>
-    ` : ""}
+    ${
+      p.buildings
+        ? `
+          <h3>단지 구성 / 주택 유형</h3>
+          <div class="card">
+            ${esc(p.buildings)}
+          </div>
+        `
+        : ""
+    }
 
-    ${p.amenities ? `
-      <h3>편의시설</h3>
-      <div class="card">${esc(p.amenities)}</div>
-    ` : ""}
+    ${
+      p.amenities
+        ? `
+          <h3>편의시설</h3>
+          <div class="card">
+            ${esc(p.amenities)}
+          </div>
+        `
+        : ""
+    }
 
     <h3>특징 및 참고사항</h3>
+
     <div class="card">
-      ${esc(p.note || "등록된 설명이 없습니다.")}
+      ${
+        esc(
+          p.note ||
+          "등록된 설명이 없습니다."
+        )
+      }
     </div>
 
     <p class="muted">
-      ${validCoord(p)
-        ? "📍 지도 위치 등록 완료"
-        : "📍 지도 위치 미등록"}
+      ${
+        validCoord(p)
+          ? "📍 지도 위치 등록 완료"
+          : "📍 지도 위치 미등록"
+      }
     </p>
 
     <a
       class="btn secondary"
-      style="display:inline-block;text-decoration:none"
+      style="
+        display:inline-block;
+        text-decoration:none;
+      "
       href="${mapSearchURL(p)}"
       target="_blank"
       rel="noopener noreferrer"
@@ -1246,36 +2198,65 @@ function renderDetail(){
   `;
 }
 
-/* ===============================
-   9. 장소 선택 및 길찾기
-================================ */
+/* ======================================
+   13. 장소 선택
 
-function selectPlace(id){
+   지도에서 마커 클릭 시:
+   - 카테고리 자동 전환
+   - 검색 필터 해제
+   - 왼쪽 목록으로 스크롤
+   - 카테고리 색상 강조
+====================================== */
+
+function selectPlace(id,fromMap=false) {
+
   const p = getPlace(id);
-  if(!p) return;
+
+  if (!p) return;
 
   selectedId = id;
 
-  if(routeMode === "origin"){
+  if (fromMap) {
+
+    activeCategory = p.type;
+    activeTags = [];
+
+    $("search").value = "";
+
+    mapHighlightedId = id;
+
+  } else {
+
+    mapHighlightedId = null;
+  }
+
+  /*
+    기존 출발지 / 도착지 선택 유지
+  */
+
+  if (routeMode === "origin") {
+
     routeOrigin = id;
 
-    if(routeDestination === id){
+    if (routeDestination === id) {
       routeDestination = null;
     }
 
     routeMode = "destination";
 
-  }else if(
+  } else if (
     routeMode === "destination" &&
     routeOrigin !== id
-  ){
+  ) {
+
     routeDestination = id;
     routeMode = null;
   }
 
   render();
 
-  if(map && validCoord(p)){
+  if (map && validCoord(p)) {
+
     map.panTo({
       lat:Number(p.lat),
       lng:Number(p.lng)
@@ -1286,12 +2267,40 @@ function selectPlace(id){
 
   $("mapnote").textContent =
     p.name +
-    (validCoord(p)
-      ? " · 지도 위치"
-      : " · 좌표 미등록");
+    " · " +
+    categories[p.type].label;
+
+  /*
+    지도 마커에서 선택한 경우
+    왼쪽 목록의 해당 장소로 자동 이동
+  */
+
+  if (fromMap) {
+
+    const item = Array.from(
+      document.querySelectorAll(
+        "[data-place]"
+      )
+    ).find(el =>
+      el.dataset.place === id
+    );
+
+    if (item) {
+
+      item.scrollIntoView({
+        behavior:"smooth",
+        block:"center"
+      });
+    }
+  }
 }
 
-function renderRoute(){
+/* ======================================
+   14. 길찾기
+====================================== */
+
+function renderRoute() {
+
   const a = getPlace(routeOrigin);
   const b = getPlace(routeDestination);
 
@@ -1313,11 +2322,17 @@ function renderRoute(){
 
   $("routeHint").textContent =
     routeMode === "origin"
+
       ? "🔵 출발지 선택 중 · 장소를 누르세요."
+
       : routeMode === "destination"
+
         ? "🟢 도착지 선택 중 · 다른 장소를 누르세요."
+
         : a && b
+
           ? "선택 완료! 길찾기를 눌러주세요."
+
           : "출발지 또는 도착지를 선택하세요.";
 
   $("routeBtn").disabled =
@@ -1335,6 +2350,7 @@ $("destinationBox").onclick = () => {
 };
 
 $("swapBtn").onclick = () => {
+
   [routeOrigin,routeDestination] =
     [routeDestination,routeOrigin];
 
@@ -1342,102 +2358,146 @@ $("swapBtn").onclick = () => {
 };
 
 $("resetRoute").onclick = () => {
+
   routeOrigin = null;
   routeDestination = null;
+
   routeMode = "origin";
+
   render();
 };
 
 $("routeBtn").onclick = () => {
+
   const a = getPlace(routeOrigin);
   const b = getPlace(routeDestination);
 
-  if(!a || !b || a.id === b.id) return;
+  if (!a || !b || a.id === b.id) return;
 
   const point = p => validCoord(p)
+
     ? p.lat + "," + p.lng
+
     : p.query ||
-      p.name + " " + (p.area || "") +
+      p.name + " " +
+      (p.area || "") +
       " Nuevo León México";
 
   const url =
     "https://www.google.com/maps/dir/?api=1" +
-    "&origin=" + encodeURIComponent(point(a)) +
-    "&destination=" + encodeURIComponent(point(b)) +
+    "&origin=" +
+    encodeURIComponent(point(a)) +
+    "&destination=" +
+    encodeURIComponent(point(b)) +
     "&travelmode=driving";
 
-  window.open(url,"_blank","noopener,noreferrer");
+  window.open(
+    url,
+    "_blank",
+    "noopener,noreferrer"
+  );
 };
 
-/* ===============================
-   10. 추가 및 편집 창
-================================ */
+/* ======================================
+   15. 장소 추가 / 편집 모달
+====================================== */
 
-function openModal(){
-  $("modalOverlay").classList.remove("hidden");
+function openModal() {
+
+  $("modalOverlay").classList.remove(
+    "hidden"
+  );
+
   $("modalStatus").textContent = "";
 }
 
-function closeModal(){
-  $("modalOverlay").classList.add("hidden");
+function closeModal() {
+
+  $("modalOverlay").classList.add(
+    "hidden"
+  );
 }
 
-function setArea(value){
+function setArea(value) {
+
   const select = $("newArea");
 
-  if(
+  if (
     value &&
     !Array.from(select.options).some(
       option => option.value === value
     )
-  ){
-    const option = document.createElement("option");
+  ) {
+
+    const option =
+      document.createElement("option");
+
     option.value = value;
-    option.textContent = value + " (기존 지역)";
+    option.textContent =
+      value + " (기존 지역)";
+
     select.appendChild(option);
   }
 
   select.value = value || "";
 }
 
-function updateHomeFields(){
+function updateHomeFields() {
+
   $("homeFields").classList.toggle(
     "hidden",
     $("newCategory").value !== "home"
   );
 }
 
-function renderEditTags(selected=[]){
+function renderEditTags(selected=[]) {
+
   $("editHousingTags").innerHTML =
     housingTags.map(tag => `
       <label
         class="tag"
-        style="display:inline-flex;align-items:center;gap:5px"
+        style="
+          display:inline-flex;
+          align-items:center;
+          gap:5px;
+        "
       >
+
         <input
           type="checkbox"
           value="${esc(tag)}"
-          ${selected.includes(tag) ? "checked" : ""}
+          ${
+            selected.includes(tag)
+              ? "checked"
+              : ""
+          }
         >
+
         ${esc(tag)}
+
       </label>
     `).join("");
 }
 
-function openAdd(){
+function openAdd() {
+
   editingId = null;
   pendingLocation = null;
 
-  $("modalTitle").textContent = "📍 새 장소 추가";
+  $("modalTitle").textContent =
+    "📍 새 장소 추가";
+
   $("modalIntro").textContent =
     "등록한 장소는 모든 방문자에게 공유됩니다.";
 
   $("newCategory").value = "home";
   $("newName").value = "";
+
   setArea("");
 
   $("newRent2").value = "";
   $("newRent3").value = "";
+
   $("newBuildings").value = "";
   $("newAmenities").value = "";
   $("newNote").value = "";
@@ -1451,24 +2511,28 @@ function openAdd(){
   openModal();
 }
 
-function openEdit(){
-  const p = getPlace(selectedId);
-  if(!p) return;
+function openEdit() {
 
-  if(!confirm(
+  const p = getPlace(selectedId);
+
+  if (!p) return;
+
+  if (!confirm(
     "이 장소를 편집하시겠습니까?\n" +
     "수정 내용은 모든 방문자에게 공유됩니다."
-  )){
+  )) {
     return;
   }
 
   editingId = p.id;
 
   pendingLocation = validCoord(p)
+
     ? {
         lat:Number(p.lat),
         lng:Number(p.lng)
       }
+
     : null;
 
   $("modalTitle").textContent =
@@ -1479,21 +2543,35 @@ function openEdit(){
 
   $("newCategory").value = p.type;
   $("newName").value = p.name;
+
   setArea(p.area);
 
-  $("newRent2").value = p.rent_2br ?? "";
-  $("newRent3").value = p.rent_3br ?? "";
+  $("newRent2").value =
+    p.rent_2br ?? "";
 
-  $("newBuildings").value = p.buildings || "";
-  $("newAmenities").value = p.amenities || "";
-  $("newNote").value = p.note || "";
+  $("newRent3").value =
+    p.rent_3br ?? "";
 
-  renderEditTags(p.housing_tags || []);
+  $("newBuildings").value =
+    p.buildings || "";
+
+  $("newAmenities").value =
+    p.amenities || "";
+
+  $("newNote").value =
+    p.note || "";
+
+  renderEditTags(
+    p.housing_tags || []
+  );
+
   updateHomeFields();
 
   $("locationStatus").textContent =
     pendingLocation
+
       ? "✓ 기존 지도 위치가 선택되어 있습니다."
+
       : "지도에서 위치를 선택해 주세요.";
 
   openModal();
@@ -1501,36 +2579,50 @@ function openEdit(){
 
 $("addFloating").onclick = openAdd;
 $("editRound").onclick = openEdit;
+
 $("closeModal").onclick = closeModal;
 $("cancelModal").onclick = closeModal;
 
 $("modalOverlay").onclick = event => {
-  if(event.target === $("modalOverlay")){
+
+  if (
+    event.target === $("modalOverlay")
+  ) {
     closeModal();
   }
 };
 
-$("newCategory").onchange = updateHomeFields;
+$("newCategory").onchange =
+  updateHomeFields;
 
-/* ===============================
-   11. 지도에서 위치 선택
-================================ */
+/* ======================================
+   16. 지도에서 좌표 선택
+====================================== */
 
-function startPick(){
-  if(!map){
-    alert("지도가 아직 준비되지 않았습니다.");
+function startPick() {
+
+  if (!map) {
+
+    alert(
+      "지도가 아직 준비되지 않았습니다."
+    );
+
     return;
   }
 
   pickMode = true;
+
   closeModal();
 
-  $("pickBanner").classList.remove("hidden");
+  $("pickBanner").classList.remove(
+    "hidden"
+  );
 
   $("mapnote").textContent =
     "위치 선택 중 · 지도에서 정확한 지점을 누르세요.";
 
-  if(window.innerWidth <= 1000){
+  if (window.innerWidth <= 1000) {
+
     $("map").scrollIntoView({
       behavior:"smooth",
       block:"center"
@@ -1538,17 +2630,26 @@ function startPick(){
   }
 }
 
-function handleMapPick(point){
-  if(!pickMode) return;
+function handleMapPick(point) {
+
+  if (!pickMode) return;
 
   pendingLocation = {
-    lat:Number(point.lat().toFixed(7)),
-    lng:Number(point.lng().toFixed(7))
+
+    lat:Number(
+      point.lat().toFixed(7)
+    ),
+
+    lng:Number(
+      point.lng().toFixed(7)
+    )
   };
 
   pickMode = false;
 
-  $("pickBanner").classList.add("hidden");
+  $("pickBanner").classList.add(
+    "hidden"
+  );
 
   $("locationStatus").textContent =
     "✓ 지도 위치 선택 완료.";
@@ -1559,22 +2660,35 @@ function handleMapPick(point){
 $("pickNew").onclick = startPick;
 
 $("cancelPick").onclick = () => {
+
   pickMode = false;
-  $("pickBanner").classList.add("hidden");
+
+  $("pickBanner").classList.add(
+    "hidden"
+  );
+
   openModal();
 };
 
-/* ===============================
-   12. Supabase 저장
-================================ */
+/* ======================================
+   17. Supabase 장소 저장
+====================================== */
 
 $("saveNew").onclick = async () => {
-  if(saving) return;
 
-  const category = $("newCategory").value;
-  const name = $("newName").value.trim();
-  const area = $("newArea").value;
-  const note = $("newNote").value.trim();
+  if (saving) return;
+
+  const category =
+    $("newCategory").value;
+
+  const name =
+    $("newName").value.trim();
+
+  const area =
+    $("newArea").value;
+
+  const note =
+    $("newNote").value.trim();
 
   const buildings =
     category === "home"
@@ -1586,34 +2700,54 @@ $("saveNew").onclick = async () => {
       ? $("newAmenities").value.trim()
       : null;
 
-  const rent2Text = $("newRent2").value.trim();
-  const rent3Text = $("newRent3").value.trim();
+  const rent2Text =
+    $("newRent2").value.trim();
+
+  const rent3Text =
+    $("newRent3").value.trim();
 
   const rent2 =
-    category === "home" && rent2Text !== ""
+    category === "home" &&
+    rent2Text !== ""
+
       ? Number(rent2Text)
+
       : null;
 
   const rent3 =
-    category === "home" && rent3Text !== ""
+    category === "home" &&
+    rent3Text !== ""
+
       ? Number(rent3Text)
+
       : null;
 
   const selectedTags =
     category === "home"
+
       ? Array.from(
-          $("editHousingTags").querySelectorAll(
-            'input[type="checkbox"]:checked'
-          )
+          $("editHousingTags")
+            .querySelectorAll(
+              'input[type="checkbox"]:checked'
+            )
         ).map(input => input.value)
+
       : [];
 
-  if(name.length < 2 || name.length > 100){
-    alert("장소 이름을 2~100자로 입력하세요.");
+  if (
+    name.length < 2 ||
+    name.length > 100
+  ) {
+
+    alert(
+      "장소 이름을 2~100자로 입력하세요."
+    );
+
     return;
   }
 
-  if(!area){
+  if (!area) {
+
     alert("지역을 선택하세요.");
     return;
   }
@@ -1623,45 +2757,68 @@ $("saveNew").onclick = async () => {
     : null;
 
   /*
-    새 장소는 지도 좌표 필수.
-    기존 장소는 좌표가 없는 경우에도
-    다른 정보만 수정할 수 있도록 허용.
+    새 장소는 좌표 필수.
+
+    기존 장소는 좌표가 없어도
+    다른 정보 수정 가능.
   */
-  if(!editing && !validCoord(pendingLocation)){
-    alert("지도에서 위치를 먼저 선택하세요.");
+
+  if (
+    !editing &&
+    !validCoord(pendingLocation)
+  ) {
+
+    alert(
+      "지도에서 위치를 먼저 선택하세요."
+    );
+
     return;
   }
 
-  for(const rent of [rent2,rent3]){
-    if(
+  for (const rent of [rent2,rent3]) {
+
+    if (
       rent !== null &&
       (
         !Number.isFinite(rent) ||
         rent < 0 ||
         rent > 10000000
       )
-    ){
+    ) {
+
       alert("임대료를 확인하세요.");
       return;
     }
   }
 
-  if(!editing){
+  if (!editing) {
+
     const duplicate = places.some(p => {
-      if(!validCoord(p)) return false;
+
+      if (!validCoord(p)) return false;
 
       return (
         p.name.trim().toLowerCase() ===
           name.toLowerCase() &&
-        Math.abs(Number(p.lat) - pendingLocation.lat)
-          < 0.0002 &&
-        Math.abs(Number(p.lng) - pendingLocation.lng)
-          < 0.0002
+
+        Math.abs(
+          Number(p.lat) -
+          pendingLocation.lat
+        ) < 0.0002 &&
+
+        Math.abs(
+          Number(p.lng) -
+          pendingLocation.lng
+        ) < 0.0002
       );
     });
 
-    if(duplicate){
-      alert("같은 이름과 위치의 장소가 이미 있습니다.");
+    if (duplicate) {
+
+      alert(
+        "같은 이름과 위치의 장소가 이미 있습니다."
+      );
+
       return;
     }
   }
@@ -1678,22 +2835,29 @@ $("saveNew").onclick = async () => {
     housing_tags:selectedTags
   };
 
-  if(validCoord(pendingLocation)){
-    payload.lat = pendingLocation.lat;
-    payload.lng = pendingLocation.lng;
+  if (validCoord(pendingLocation)) {
+
+    payload.lat =
+      pendingLocation.lat;
+
+    payload.lng =
+      pendingLocation.lng;
   }
 
   saving = true;
+
   $("saveNew").disabled = true;
 
   $("modalStatus").textContent =
     "Supabase에 저장하는 중...";
 
-  try{
+  try {
+
     let result;
     let savedId;
 
-    if(editing){
+    if (editing) {
+
       savedId = editing.id;
 
       result = await db
@@ -1703,7 +2867,8 @@ $("saveNew").onclick = async () => {
         .select("id")
         .single();
 
-    }else{
+    } else {
+
       savedId = makeId();
 
       result = await db
@@ -1717,56 +2882,98 @@ $("saveNew").onclick = async () => {
         .single();
     }
 
-    if(result.error){
+    if (result.error) {
       throw result.error;
     }
 
-    closeModal();
+    const wasEditing =
+      !!editing;
 
-    const wasEditing = !!editing;
-    const savedLocation = pendingLocation;
+    const savedLocation =
+      pendingLocation;
+
+    closeModal();
 
     editingId = null;
     pendingLocation = null;
 
+    /*
+      저장 중 조회 차단을 해제한 뒤
+      Supabase 데이터를 다시 불러온다.
+    */
+
+    saving = false;
+
     await loadData();
 
     selectedId = savedId;
+    mapHighlightedId = savedId;
+
+    const savedPlace =
+      getPlace(savedId);
+
+    if (savedPlace) {
+
+      activeCategory =
+        savedPlace.type;
+
+      activeTags = [];
+
+      $("search").value = "";
+    }
+
     render();
 
-    if(map && validCoord(savedLocation)){
+    if (
+      map &&
+      validCoord(savedLocation)
+    ) {
+
       map.panTo(savedLocation);
       map.setZoom(15);
     }
 
     $("mapnote").textContent =
       name +
-      (wasEditing ? " · 수정 완료" : " · 등록 완료");
+      (
+        wasEditing
+          ? " · 수정 완료"
+          : " · 등록 완료"
+      );
 
     alert(
       wasEditing
+
         ? "장소 정보가 수정되었습니다."
+
         : "새 장소가 등록되었습니다."
     );
 
-  }catch(error){
+  } catch(error) {
+
     console.error(error);
 
     $("modalStatus").textContent =
       "저장 실패: " +
-      (error.message || "설정을 확인하세요.");
+      (
+        error.message ||
+        "설정을 확인하세요."
+      );
 
-  }finally{
+  } finally {
+
     saving = false;
+
     $("saveNew").disabled = false;
   }
 };
 
-/* ===============================
-   13. 전체 화면 렌더링
-================================ */
+/* ======================================
+   18. 전체 화면 렌더링
+====================================== */
 
-function render(){
+function render() {
+
   renderFilters();
   renderLegend();
   renderList();
@@ -1775,18 +2982,31 @@ function render(){
   syncMarkers();
 }
 
-/* ===============================
-   14. 최초 실행
-================================ */
+/* ======================================
+   19. 최초 실행
+====================================== */
 
-$("search").addEventListener("input",render);
+$("search").addEventListener(
+  "input",
+  () => {
+
+    mapHighlightedId = null;
+
+    render();
+  }
+);
 
 render();
+
 loadData();
 
 /*
-  주기적 자동 조회 없음.
-  수동 새로고침 또는 저장 직후에만 다시 조회.
+  자동 20초 조회 없음.
+
+  데이터 조회:
+  1. 최초 접속
+  2. 저장 직후
+  3. 수동 새로고침
 */
 
 </script>
