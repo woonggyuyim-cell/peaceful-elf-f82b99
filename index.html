@@ -976,8 +976,8 @@ h3 { font-size:14px;margin:20px 0 9px; }
       <button
         id="deleteRound"
         class="delete-round hidden"
-        title="장소 삭제"
-        aria-label="장소 삭제"
+        title="관리자에게 삭제 요청"
+        aria-label="삭제 요청"
         type="button"
       >✕</button>
 
@@ -1125,8 +1125,13 @@ h3 { font-size:14px;margin:20px 0 9px; }
         <p id="schoolRatioPreview"></p>
       </div>
       <div class="field">
-        <label>언어 (복수 선택 가능)</label>
-        <div id="editSchoolLanguages" class="tags"></div>
+        <label for="newSchoolLanguage">언어</label>
+        <select id="newSchoolLanguage">
+          <option value="">확인 필요</option>
+          <option value="영어 위주">영어 위주</option>
+          <option value="영어 + 스페인어">영어 + 스페인어</option>
+          <option value="스페인어 위주">스페인어 위주</option>
+        </select>
       </div>
     </div>
 
@@ -1252,16 +1257,20 @@ h3 { font-size:14px;margin:20px 0 9px; }
   aria-labelledby="deleteTitle"
   aria-describedby="deletePlaceName deleteDescription"
 >
-  <h2 id="deleteTitle">정말로 삭제하시나요?</h2>
+  <h2 id="deleteTitle">삭제 요청을 보내시겠습니까?</h2>
   <p id="deletePlaceName"></p>
   <p id="deleteDescription" class="muted">
-    Supabase에 저장된 장소 정보가 실제로 삭제됩니다.
-    삭제한 정보는 되돌릴 수 없습니다.
+    관리자에게 삭제 요청을 보냅니다.
+    관리자가 확인 후 삭제하기 전까지 장소 정보는 유지됩니다.
   </p>
+  <div class="field">
+    <label for="deleteReason">삭제 요청 사유 (선택)</label>
+    <textarea id="deleteReason" maxlength="500" placeholder="삭제가 필요한 이유를 적어 주세요."></textarea>
+  </div>
   <p id="deleteStatus" class="status error hidden" role="alert"></p>
   <div class="form-actions">
-    <button id="cancelDelete" class="btn secondary" type="button" autofocus>아니오</button>
-    <button id="confirmDelete" class="btn danger" type="button">예</button>
+    <button id="cancelDelete" class="btn secondary" type="button" autofocus>취소</button>
+    <button id="confirmDelete" class="btn danger" type="button">요청 보내기</button>
   </div>
 </dialog>
 
@@ -2779,7 +2788,9 @@ function renderSchoolForm(p={}) {
     </label>
   `).join("");
   $("editSchoolLevels").innerHTML = checks(schoolLevels,p.school_levels);
-  $("editSchoolLanguages").innerHTML = checks(schoolLanguages,p.school_languages);
+  $("newSchoolLanguage").value = Array.isArray(p.school_languages) &&
+    p.school_languages.length === 1 && schoolLanguages.includes(p.school_languages[0])
+      ? p.school_languages[0] : "";
   $("newSchoolRatio").value = Object.hasOwn(schoolRatios,p.school_korean_ratio) ? p.school_korean_ratio : "";
   $("schoolRatioPreview").innerHTML = ratioBadge($("newSchoolRatio").value);
 }
@@ -2916,7 +2927,7 @@ function openEdit() {
 $("addFloating").onclick = openAdd;
 $("editRound").onclick = openEdit;
 
-/* Supabase에서 선택한 장소 한 건만 삭제합니다. */
+/* 장소는 유지하고, 관리자 전용 요청함에 삭제 요청만 접수합니다. */
 
 function openDelete() {
   const p = getPlace(selectedId);
@@ -2924,6 +2935,7 @@ function openDelete() {
 
   deletingPlaceId = p.id;
   $("deletePlaceName").textContent = p.name;
+  $("deleteReason").value = "";
   $("deleteStatus").textContent = "";
   $("deleteStatus").classList.add("hidden");
   $("deleteDialog").showModal();
@@ -2953,55 +2965,60 @@ $("confirmDelete").onclick = async () => {
   }
 
   const id = deletingPlaceId;
+  const p = getPlace(id);
+  if (!p) {
+    $("deleteStatus").textContent = "장소 정보를 찾을 수 없습니다. 새로고침 후 확인해 주세요.";
+    $("deleteStatus").classList.remove("hidden");
+    return;
+  }
+
+  const reason = $("deleteReason").value.trim();
+  if (reason.length > 500) {
+    $("deleteStatus").textContent = "삭제 요청 사유는 500자 이내로 입력해 주세요.";
+    $("deleteStatus").classList.remove("hidden");
+    return;
+  }
+
   deleting = true;
   $("confirmDelete").disabled = true;
   $("cancelDelete").disabled = true;
-  $("confirmDelete").textContent = "삭제 중...";
+  $("confirmDelete").textContent = "요청 보내는 중...";
   $("deleteStatus").classList.add("hidden");
 
   try {
-    const {data,error} = await db
-      .from("map_places")
-      .delete()
-      .eq("id",id)
-      .select("id")
-      .single();
+    // 요청함은 방문자에게 INSERT만 허용합니다. .select()를 붙이지 않습니다.
+    const {error} = await db
+      .from("map_deletion_requests")
+      .insert({
+        place_id:p.id,
+        place_name:p.name,
+        place_category:p.type,
+        place_area:p.area || "",
+        reason
+      });
 
-    if (error) throw error;
-    if (!data || data.id !== id) {
-      throw new Error("삭제 결과를 확인할 수 없습니다. 새로고침 후 다시 확인해 주세요.");
-    }
-
-    places = places.filter(p => p.id !== id);
-    if (selectedId === id) selectedId = null;
-    if (mapHighlightedId === id) mapHighlightedId = null;
-    if (expandedMarkerId === id) setExpandedMarker(null);
-    if (routeOrigin === id) {
-      routeOrigin = null;
-      routeMode = "origin";
-    }
-    if (routeDestination === id) {
-      routeDestination = null;
-      if (routeOrigin) routeMode = "destination";
-    }
+    const alreadyPending = error && error.code === "23505";
+    if (error && !alreadyPending) throw error;
 
     deletingPlaceId = null;
     $("deleteDialog").close();
-    render();
-    $("mapnote").textContent = "장소가 삭제되었습니다.";
-    setStatus("✓ 장소 삭제 완료 · 전체 장소 " + places.length + "개");
+    setStatus(alreadyPending
+      ? "✓ 이미 삭제 요청이 접수된 장소입니다. 관리자가 확인 후 처리합니다."
+      : "✓ 삭제 요청이 접수되었습니다. 관리자가 확인 후 처리합니다.");
 
   } catch(error) {
     console.error(error);
     $("deleteStatus").textContent =
-      "삭제 실패: " + (error.message || "연결 및 삭제 권한을 확인하세요.");
+      error.code === "23503"
+        ? "이미 삭제된 장소입니다. 새로고침 후 확인해 주세요."
+        : "삭제 요청 실패: " + (error.message || "잠시 후 다시 시도해 주세요.");
     $("deleteStatus").classList.remove("hidden");
 
   } finally {
     deleting = false;
     $("confirmDelete").disabled = false;
     $("cancelDelete").disabled = false;
-    $("confirmDelete").textContent = "예";
+    $("confirmDelete").textContent = "요청 보내기";
   }
 };
 
@@ -3269,7 +3286,8 @@ $("saveNew").onclick = async () => {
     ).map(input => input.value).filter(value => allowed.includes(value));
 
     payload.school_levels = checkedValues("editSchoolLevels",schoolLevels);
-    payload.school_languages = checkedValues("editSchoolLanguages",schoolLanguages);
+    const language = $("newSchoolLanguage").value;
+    payload.school_languages = schoolLanguages.includes(language) ? [language] : [];
     payload.school_korean_ratio = Object.hasOwn(schoolRatios,$("newSchoolRatio").value)
       ? $("newSchoolRatio").value : null;
   }
