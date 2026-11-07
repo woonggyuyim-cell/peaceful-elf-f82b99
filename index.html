@@ -1161,7 +1161,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
         <p id="schoolRatioPreview"></p>
       </div>
       <div class="field">
-        <label for="newSchoolLanguage">언어</label>
+        <label for="newSchoolLanguage">언어 (단일 선택)</label>
         <select id="newSchoolLanguage">
           <option value="">확인 필요</option>
           <option value="영어 위주">영어 위주</option>
@@ -1333,7 +1333,7 @@ const db = window.supabase.createClient(
 const $ = id => document.getElementById(id);
 
 const schoolAreas = ["Santa Catarina","San Pedro","Monterrey"];
-const schoolLevels = ["유치원","초등학교","중학교","고등학교"];
+const schoolLevels = ["유치원","초등학교","중학교","고등학교","대학교"];
 const schoolLanguages = ["영어 위주","영어 + 스페인어","스페인어 위주"];
 const schoolRatios = {"많음":"high","중간":"medium","적음":"low"};
 
