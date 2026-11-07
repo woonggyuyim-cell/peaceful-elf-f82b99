@@ -694,6 +694,9 @@ h3 { font-size:14px;margin:20px 0 9px; }
   margin-top:24px;
 }
 
+.place-meta { display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px; }
+.place-updated { font-size:11px;color:var(--muted);white-space:nowrap; }
+
 .detail-content .tags {
   margin:12px 0;
 }
@@ -1587,7 +1590,7 @@ async function loadData() {
       .select(
         "id,name,category,area,lat,lng,query," +
         "rent_2br,rent_3br,buildings,amenities," +
-        "note,housing_tags,source,created_at," +
+        "note,housing_tags,source,created_at,updated_at," +
         "school_levels,school_korean_ratio,school_languages"
       )
       .order("created_at",{
@@ -2626,16 +2629,11 @@ function renderDetail() {
 
     <h2>${esc(p.name)}</h2>
 
-    <p class="muted">
-      ${esc(p.area || "지역 정보 없음")}
-      ·
-      ${
-        esc(
-          p.id.startsWith("C-")
-            ? "추가 장소"
-            : p.id
-        )
-      }
+    <p class="muted place-meta">
+      <span>${esc(p.area || "지역 정보 없음")}</span>
+      ${commentDate(p.updated_at || p.created_at) ? `
+        <time class="place-updated" datetime="${esc(p.updated_at || p.created_at)}">최신화 ${esc(commentDate(p.updated_at || p.created_at).replace(/\s/g,"").replace(/\.$/,""))}</time>
+      ` : ""}
     </p>
 
     ${rentHTML}
