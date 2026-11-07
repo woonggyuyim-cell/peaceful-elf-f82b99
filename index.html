@@ -2648,9 +2648,7 @@ function renderDetail() {
       p.buildings
         ? `
           <h3>단지 구성 / 주택 유형</h3>
-          <div class="card">
-            ${esc(p.buildings)}
-          </div>
+          <div class="card">${esc(p.buildings)}</div>
         `
         : ""
     }
@@ -2659,23 +2657,14 @@ function renderDetail() {
       p.amenities
         ? `
           <h3>편의시설</h3>
-          <div class="card">
-            ${esc(p.amenities)}
-          </div>
+          <div class="card">${esc(p.amenities)}</div>
         `
         : ""
     }
 
     <h3>특징 및 참고사항</h3>
 
-    <div class="card">
-      ${
-        esc(
-          p.note ||
-          "등록된 설명이 없습니다."
-        )
-      }
-    </div>
+    <div class="card">${esc(p.note || "등록된 설명이 없습니다.")}</div>
 
     ${commentPanel(p)}
 
