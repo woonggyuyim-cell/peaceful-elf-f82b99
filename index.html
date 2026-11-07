@@ -1349,7 +1349,7 @@ const db = window.supabase.createClient(
 
 const $ = id => document.getElementById(id);
 
-const schoolAreas = ["Santa Catarina","San Pedro","Monterrey"];
+const schoolAreas = ["Santa Catarina","San Pedro","Monterrey","Apodaca"];
 const schoolLevels = ["유치원","초등학교","중학교","고등학교","대학교"];
 const schoolLanguages = ["영어 위주","영어 + 스페인어","스페인어 위주"];
 const schoolRatios = {"많음":"high","중간":"medium","적음":"low"};
@@ -3507,7 +3507,7 @@ $("saveNew").onclick = async () => {
     !schoolAreas.includes(area) &&
     (!editing || editing.type !== "school" || editing.area !== area)
   ) {
-    alert("학교 위치는 Santa Catarina, San Pedro, Monterrey 중 선택하세요.");
+    alert("학교 위치는 Santa Catarina, San Pedro, Monterrey, Apodaca 중 선택하세요.");
     return;
   }
 
