@@ -698,6 +698,42 @@ h3 { font-size:14px;margin:20px 0 9px; }
   margin:12px 0;
 }
 
+.comments-panel {
+  margin-top:16px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  overflow:hidden;
+}
+.comments-panel summary {
+  padding:14px;
+  background:#f4f8fc;
+  cursor:pointer;
+  font-size:14px;
+  font-weight:bold;
+}
+.comments-panel summary:focus-visible { outline:2px solid var(--blue);outline-offset:-3px; }
+.comments-content { padding:13px; }
+.comment-form textarea {
+  display:block;
+  width:100%;
+  min-height:90px;
+  padding:11px;
+  border:1px solid #dce3eb;
+  border-radius:10px;
+  font-size:13px;
+  line-height:1.6;
+  resize:vertical;
+}
+.comment-actions { display:flex;justify-content:flex-end;margin-top:8px; }
+.comment-actions .btn { padding:9px 13px; }
+.comment-list { max-height:360px;overflow-y:auto;overscroll-behavior:contain; }
+.place-comment { padding:12px 0;border-top:1px solid var(--line); }
+.comment-body { font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere; }
+.comment-date { display:block;margin-top:6px;font-size:11px;color:var(--muted); }
+.comment-status { margin:8px 0;font-size:12px;line-height:1.6;color:#32714a; }
+.comment-status.error { color:#b43d3d; }
+.comment-more { width:100%;margin-top:8px; }
+
 /* ==========================
    장소 추가 및 편집 모달
 ========================== */
@@ -1463,6 +1499,9 @@ let loading = false;
 let saving = false;
 let deleting = false;
 let deletingPlaceId = null;
+
+const commentThreads = new Map();
+const COMMENT_PAGE_SIZE = 20;
 
 /* ======================================
    5. 공통 함수
@@ -2341,6 +2380,176 @@ function mapSearchURL(p) {
   );
 }
 
+/* 장소별 댓글: 접기 상태와 입력 중인 내용을 다른 화면 갱신에도 유지합니다. */
+
+function commentThread(id) {
+  if (!commentThreads.has(id)) {
+    commentThreads.set(id,{
+      open:false,draft:"",items:[],offset:0,hasMore:false,
+      loaded:false,loading:false,submitting:false,version:0,
+      message:"",messageError:false,loadError:"",pendingId:null,pendingBody:""
+    });
+  }
+  return commentThreads.get(id);
+}
+
+function commentPanel(p) {
+  return `
+    <details id="placeComments" class="comments-panel" data-thread="${esc(p.id)}" ${commentThread(p.id).open ? "open" : ""}>
+      <summary>댓글 달기</summary>
+      <div class="comments-content">
+        <form id="commentForm" class="comment-form">
+          <textarea id="commentBody" aria-label="댓글 내용" maxlength="1000" placeholder="이 장소에 대한 경험이나 의견을 남겨 주세요."></textarea>
+          <div class="comment-actions"><button id="commentSubmit" class="btn" type="submit">댓글 등록</button></div>
+          <p class="muted">등록한 댓글은 모든 방문자에게 공개됩니다.</p>
+        </form>
+        <p id="commentStatus" class="comment-status" role="status" aria-live="polite"></p>
+        <div id="commentList" class="comment-list" role="list" aria-label="장소 댓글"></div>
+        <button id="commentMore" class="small-btn comment-more hidden" type="button">이전 댓글 더 보기</button>
+      </div>
+    </details>
+  `;
+}
+
+function currentCommentPanel(id) {
+  const panel = $("placeComments");
+  return selectedId === id && panel?.dataset?.thread === id ? panel : null;
+}
+
+function commentDate(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  return new Intl.DateTimeFormat("ko-KR",{
+    timeZone:"America/Monterrey",year:"numeric",month:"2-digit",day:"2-digit"
+  }).format(date);
+}
+
+function paintComments(id) {
+  if (!currentCommentPanel(id)) return;
+  const state = commentThread(id);
+  $("commentList").innerHTML = state.items.length
+    ? state.items.map(comment => `
+      <article class="place-comment" role="listitem">
+        <div class="comment-body">${esc(comment.body)}</div>
+        <time class="comment-date" datetime="${esc(comment.created_at)}">${esc(commentDate(comment.created_at))}</time>
+      </article>
+    `).join("")
+    : state.loaded && !state.loading
+      ? '<p class="muted">아직 댓글이 없습니다. 첫 의견을 남겨 주세요.</p>' : "";
+
+  $("commentStatus").textContent = state.messageError ? state.message :
+    state.loadError || state.message || (state.loading ? "댓글을 불러오는 중..." : "");
+  $("commentStatus").classList.toggle("error",!!state.loadError || state.messageError);
+  $("commentSubmit").disabled = state.submitting;
+  $("commentSubmit").textContent = state.submitting ? "등록 중..." : "댓글 등록";
+  $("commentBody").disabled = state.submitting;
+  $("commentMore").classList.toggle("hidden",!state.hasMore);
+  $("commentMore").disabled = state.loading || state.submitting;
+}
+
+async function loadComments(id,reset=false) {
+  const state = commentThread(id);
+  if (state.loading && !reset) return;
+  const version = ++state.version;
+  const offset = reset ? 0 : state.offset;
+  state.loading = true;
+  state.loadError = "";
+  paintComments(id);
+
+  try {
+    const {data,error} = await db.from("map_place_comments")
+      .select("id,place_id,body,created_at")
+      .eq("place_id",id)
+      .order("created_at",{ascending:false})
+      .order("id",{ascending:false})
+      .range(offset,offset + COMMENT_PAGE_SIZE - 1);
+
+    if (version !== state.version) return;
+    if (error) throw error;
+    const comments = data || [];
+    const combined = reset ? comments : [...state.items,...comments];
+    state.items = Array.from(new Map(combined.map(c => [c.id,c])).values());
+    state.offset = offset + comments.length;
+    state.hasMore = comments.length === COMMENT_PAGE_SIZE;
+    state.loaded = true;
+  } catch(error) {
+    if (version === state.version) {
+      state.loadError = "댓글 목록을 불러오지 못했습니다. 접었다 다시 펼쳐 재시도해 주세요.";
+    }
+  } finally {
+    if (version === state.version) {
+      state.loading = false;
+      paintComments(id);
+    }
+  }
+}
+
+async function postComment(id) {
+  const state = commentThread(id);
+  if (state.submitting) return;
+  const body = state.draft.trim();
+  if (!body || body.length > 1000 || !getPlace(id)) {
+    state.message = !body ? "댓글 내용을 입력해 주세요." :
+      body.length > 1000 ? "댓글은 1,000자 이내로 입력해 주세요." : "장소 정보를 새로고침해 주세요.";
+    state.messageError = true;
+    paintComments(id);
+    return;
+  }
+
+  state.submitting = true;
+  state.message = "";
+  state.messageError = false;
+  paintComments(id);
+
+  try {
+    // 응답이 유실되어 재시도해도 같은 댓글이 중복 등록되지 않게 합니다.
+    if (!state.pendingId || state.pendingBody !== body) {
+      state.pendingId = window.crypto.randomUUID();
+      state.pendingBody = body;
+    }
+    const {error} = await db.from("map_place_comments")
+      .insert({id:state.pendingId,place_id:id,body});
+    if (error && error.code !== "23505") throw error;
+
+    state.draft = "";
+    state.pendingId = null;
+    state.pendingBody = "";
+    state.message = "댓글이 등록되었습니다.";
+    state.version++;
+    state.loading = false;
+    if (currentCommentPanel(id)) $("commentBody").value = "";
+    await loadComments(id,true);
+  } catch(error) {
+    state.message = "댓글 등록에 실패했습니다. 내용은 유지되니 다시 시도해 주세요.";
+    state.messageError = true;
+  } finally {
+    state.submitting = false;
+    paintComments(id);
+  }
+}
+
+function mountComments(p) {
+  const state = commentThread(p.id);
+  const panel = $("placeComments");
+  const input = $("commentBody");
+  input.value = state.draft;
+  input.oninput = () => { state.draft = input.value; };
+  panel.addEventListener("toggle",() => {
+    if (!currentCommentPanel(p.id)) return;
+    const wasOpen = state.open;
+    state.open = panel.open;
+    if (state.open && !wasOpen) loadComments(p.id,true);
+  });
+  $("commentForm").onsubmit = event => {
+    event.preventDefault();
+    state.draft = input.value;
+    postComment(p.id);
+  };
+  $("commentMore").onclick = () => loadComments(p.id);
+  paintComments(p.id);
+  if (state.open && !state.loaded && !state.loading) loadComments(p.id,true);
+}
+
 function renderDetail() {
 
   const p = getPlace(selectedId);
@@ -2468,6 +2677,8 @@ function renderDetail() {
       }
     </div>
 
+    ${commentPanel(p)}
+
     <p class="muted">
       ${
         validCoord(p)
@@ -2489,6 +2700,8 @@ function renderDetail() {
       Google Maps 위치 확인
     </a>
   `;
+
+  mountComments(p);
 }
 
 /* ======================================
