@@ -2916,7 +2916,7 @@ $("estimateRoute").onclick = async () => {
     const {Route} = await google.maps.importLibrary("routes");
     const {routes} = await Route.computeRoutes({
       origin:point(a),destination:point(b),travelMode:"DRIVING",
-      routingPreference:"TRAFFIC_AWARE_OPTIMAL",departureTime:new Date(),
+      routingPreference:"TRAFFIC_AWARE_OPTIMAL",
       fields:["durationMillis","distanceMeters"],language:"ko",region:"mx"
     });
     if (version !== routeEstimate.version || key !== routeKey()) return;
