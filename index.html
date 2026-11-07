@@ -719,6 +719,11 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 .comments-panel summary:focus-visible { outline:2px solid var(--blue);outline-offset:-3px; }
 .comments-content { padding:13px; }
+.comment-warning { color:#b91c1c;font-size:12px;line-height:1.6;margin:0 0 10px; }
+.school-filter-group { margin-top:10px;border-top:1px solid var(--line);padding-top:10px; }
+.school-filter-group summary { cursor:pointer;font-size:12px;font-weight:bold; }
+.school-filter-group .tags { margin-top:9px; }
+
 .comment-form textarea {
   display:block;
   width:100%;
@@ -943,6 +948,12 @@ h3 { font-size:14px;margin:20px 0 9px; }
         만족하는 주택이 표시됩니다.
       </p>
 
+    </div>
+
+    <div id="schoolFilterSection" class="tag-section hidden">
+      <div class="row"><strong style="font-size:12px">학교 조건 필터</strong><button id="clearSchoolFilters" class="small-btn">필터 초기화</button></div>
+      <div id="schoolFilterGroups"></div>
+      <p class="muted">같은 항목 안에서는 하나라도, 다른 항목끼리는 모두 일치하는 학교를 표시합니다.</p>
     </div>
 
     <div id="legend" class="legend"></div>
@@ -1492,6 +1503,8 @@ let mapHighlightedId = null;
 
 let activeCategory = "all";
 let activeTags = [];
+const activeSchoolFilters = {ratio:[],levels:[],language:[]};
+const schoolFilterOpen = {ratio:false,levels:false,language:false};
 
 let routeMode = "origin";
 let routeOrigin = null;
@@ -1703,6 +1716,11 @@ function visiblePlaces() {
       );
     }
 
+    if (activeCategory === "school") {
+      if (activeSchoolFilters.ratio.length && !activeSchoolFilters.ratio.includes(p.school_korean_ratio)) return false;
+      if (activeSchoolFilters.levels.length && !activeSchoolFilters.levels.some(v => (p.school_levels || []).includes(v))) return false;
+      if (activeSchoolFilters.language.length && !activeSchoolFilters.language.some(v => (p.school_languages || []).includes(v))) return false;
+    }
     return true;
   });
 }
@@ -1729,9 +1747,6 @@ function renderFilters() {
 
         activeCategory = button.dataset.category;
 
-        if (activeCategory !== "home") {
-          activeTags = [];
-        }
 
         mapHighlightedId = null;
 
@@ -1772,10 +1787,47 @@ function renderFilters() {
         render();
       };
     });
+  renderSchoolFilters();
 }
 
 $("clearTags").onclick = () => {
   activeTags = [];
+  render();
+};
+
+
+function renderSchoolFilters() {
+  $("schoolFilterSection").classList.toggle("hidden",activeCategory !== "school");
+  const groups = [
+    ["ratio","한국인 학생 비율",["많음","중간","적음"]],
+    ["levels","학년",schoolLevels],
+    ["language","언어",schoolLanguages]
+  ];
+  $("schoolFilterGroups").innerHTML = groups.map(([key,label,options]) => `
+    <details class="school-filter-group" data-school-group="${key}" ${schoolFilterOpen[key] ? "open" : ""}>
+      <summary>${label}${activeSchoolFilters[key].length ? " · " + activeSchoolFilters[key].length + "개 선택" : ""}</summary>
+      <div class="tags">${options.map(value => `
+        <button type="button" class="tag ${activeSchoolFilters[key].includes(value) ? "active" : ""}"
+          data-school-filter="${key}" data-value="${esc(value)}" aria-pressed="${activeSchoolFilters[key].includes(value)}">${esc(value)}</button>
+      `).join("")}</div>
+    </details>
+  `).join("");
+  document.querySelectorAll("[data-school-group]").forEach(el => {
+    el.addEventListener("toggle",() => { if (el.isConnected) schoolFilterOpen[el.dataset.schoolGroup] = el.open; });
+  });
+  document.querySelectorAll("[data-school-filter]").forEach(button => {
+    button.onclick = () => {
+      const key = button.dataset.schoolFilter, value = button.dataset.value;
+      activeSchoolFilters[key] = activeSchoolFilters[key].includes(value)
+        ? activeSchoolFilters[key].filter(v => v !== value) : [...activeSchoolFilters[key],value];
+      mapHighlightedId = null;
+      render();
+    };
+  });
+}
+
+$("clearSchoolFilters").onclick = () => {
+  Object.keys(activeSchoolFilters).forEach(key => { activeSchoolFilters[key] = []; });
   render();
 };
 
@@ -2405,6 +2457,7 @@ function commentPanel(p) {
       <summary>댓글 달기</summary>
       <div class="comments-content">
         <form id="commentForm" class="comment-form">
+          <p class="comment-warning">댓글은 등록 후 수정 및 삭제할 수 없으니 신중하게 작성해 주세요.</p>
           <textarea id="commentBody" aria-label="댓글 내용" maxlength="1000" placeholder="이 장소에 대한 경험이나 의견을 남겨 주세요."></textarea>
           <div class="comment-actions"><button id="commentSubmit" class="btn" type="submit">댓글 등록</button></div>
           <p class="muted">등록한 댓글은 모든 방문자에게 공개됩니다.</p>
@@ -2713,10 +2766,6 @@ function selectPlace(id,fromMap=false) {
   selectedId = id;
 
   if (fromMap) {
-
-    activeTags = [];
-
-    $("search").value = "";
 
     mapHighlightedId = id;
 
