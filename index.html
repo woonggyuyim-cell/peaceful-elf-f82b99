@@ -639,7 +639,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
   margin-top:8px;
 }
 
-.route-result { margin-top:8px;padding:10px;background:#f4f8fc;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-line; }
+.route-result { margin-top:8px;padding:10px;background:#f4f8fc;border-radius:10px;font-size:12px;font-weight:700;text-align:center;line-height:1.6;white-space:pre-line; }
 .route-result.error { background:#fff1f1;color:#b43d3d; }
 
 .facts {
@@ -2927,7 +2927,7 @@ $("estimateRoute").onclick = async () => {
       ? Math.floor(minutes/60) + "시간" + (minutes%60 ? " " + minutes%60 + "분" : "")
       : minutes + "분";
     const distance = Number.isFinite(route.distanceMeters) ? " · " + (route.distanceMeters/1000).toFixed(1) + "km" : "";
-    routeEstimate.text = "차량 약 " + time + distance + "\n현재 교통상황 기준 · Google Maps";
+    routeEstimate.text = "차량 약 " + time + distance;
   } catch(error) {
     if (version !== routeEstimate.version || key !== routeKey()) return;
     console.error("Route estimate failed:",error);
