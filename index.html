@@ -634,10 +634,13 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
 .route-actions {
   display:grid;
-  grid-template-columns:68px minmax(0,1fr);
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
   gap:7px;
   margin-top:8px;
 }
+
+.route-result { margin-top:8px;padding:10px;background:#f4f8fc;border-radius:10px;font-size:12px;line-height:1.6;white-space:pre-line; }
+.route-result.error { background:#fff1f1;color:#b43d3d; }
 
 .facts {
   display:grid;
@@ -695,7 +698,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 .place-meta { display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px; }
-.place-updated { font-size:11px;color:var(--muted);white-space:nowrap; }
+.place-updated { margin-left:auto;text-align:right;font-size:11px;color:var(--muted);white-space:nowrap; }
 
 .detail-content .tags {
   margin:12px 0;
@@ -1024,7 +1027,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
     <div class="route-card">
 
-      <h3>🚗 차량 길찾기</h3>
+      <div class="row" style="margin-bottom:8px"><h3 style="margin:0">🚗 차량 길찾기</h3><button id="resetRoute" class="small-btn" style="padding:4px 7px">초기화</button></div>
 
       <div class="route-grid">
 
@@ -1056,15 +1059,15 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
       <div class="route-actions">
 
-        <button id="resetRoute" class="btn secondary">
-          초기화
-        </button>
+        <button id="estimateRoute" class="btn secondary" disabled>소요시간 보기</button>
 
         <button id="routeBtn" class="btn" disabled>
-          Google Maps 길찾기
+          구글 길찾기
         </button>
 
       </div>
+
+      <div id="routeResult" class="route-result hidden" role="status" aria-live="polite"></div>
 
       <p class="muted">
         출발지·도착지 선택 후 장소를 눌러주세요.
@@ -2632,7 +2635,7 @@ function renderDetail() {
     <p class="muted place-meta">
       <span>${esc(p.area || "지역 정보 없음")}</span>
       ${commentDate(p.updated_at || p.created_at) ? `
-        <time class="place-updated" datetime="${esc(p.updated_at || p.created_at)}">최신화 ${esc(commentDate(p.updated_at || p.created_at).replace(/\s/g,"").replace(/\.$/,""))}</time>
+        <time class="place-updated" datetime="${esc(p.updated_at || p.created_at)}">업데이트 ${esc(commentDate(p.updated_at || p.created_at).replace(/\s/g,"").replace(/\.$/,""))}</time>
       ` : ""}
     </p>
 
@@ -2815,6 +2818,12 @@ function selectPlace(id,fromMap=false) {
    14. 길찾기
 ====================================== */
 
+const routeEstimate = {key:"",version:0,loading:false,text:"",error:false};
+
+function routeKey() {
+  return JSON.stringify([getPlace(routeOrigin),getPlace(routeDestination)].map(p => p ? [p.id,p.lat,p.lng,p.query,p.name,p.area] : null));
+}
+
 function renderRoute() {
 
   const a = getPlace(routeOrigin);
@@ -2853,6 +2862,15 @@ function renderRoute() {
 
   $("routeBtn").disabled =
     !a || !b || a.id === b.id;
+
+  if (routeEstimate.key !== routeKey()) {
+    Object.assign(routeEstimate,{key:routeKey(),version:routeEstimate.version+1,loading:false,text:"",error:false});
+  }
+  $("estimateRoute").disabled = !a || !b || a.id === b.id || routeEstimate.loading;
+  $("estimateRoute").textContent = routeEstimate.loading ? "조회 중..." : "소요시간 보기";
+  $("routeResult").classList.toggle("hidden",!routeEstimate.text);
+  $("routeResult").classList.toggle("error",routeEstimate.error);
+  $("routeResult").textContent = routeEstimate.text;
 }
 
 $("originBox").onclick = () => {
@@ -2881,6 +2899,43 @@ $("resetRoute").onclick = () => {
   routeMode = "origin";
 
   render();
+};
+
+
+$("estimateRoute").onclick = async () => {
+  const a = getPlace(routeOrigin), b = getPlace(routeDestination);
+  if (!a || !b || a.id === b.id || routeEstimate.loading) return;
+  renderRoute();
+  const key = routeKey(), version = ++routeEstimate.version;
+  Object.assign(routeEstimate,{loading:true,error:false,text:"운전 소요시간을 확인하는 중..."});
+  renderRoute();
+  const point = p => validCoord(p) ? {lat:Number(p.lat),lng:Number(p.lng)}
+    : p.query || p.name + " " + (p.area || "") + " Nuevo León México";
+  try {
+    if (!window.google?.maps?.importLibrary) throw new Error("Map not ready");
+    const {Route} = await google.maps.importLibrary("routes");
+    const {routes} = await Route.computeRoutes({
+      origin:point(a),destination:point(b),travelMode:"DRIVING",
+      routingPreference:"TRAFFIC_AWARE_OPTIMAL",departureTime:new Date(),
+      fields:["durationMillis","distanceMeters"],language:"ko",region:"mx"
+    });
+    if (version !== routeEstimate.version || key !== routeKey()) return;
+    const route = routes?.[0];
+    if (!route || !Number.isFinite(route.durationMillis)) throw new Error("No route duration");
+    const minutes = Math.max(1,Math.ceil(route.durationMillis / 60000));
+    const time = minutes >= 60
+      ? Math.floor(minutes/60) + "시간" + (minutes%60 ? " " + minutes%60 + "분" : "")
+      : minutes + "분";
+    const distance = Number.isFinite(route.distanceMeters) ? " · " + (route.distanceMeters/1000).toFixed(1) + "km" : "";
+    routeEstimate.text = "차량 약 " + time + distance + "\n현재 교통상황 기준 · Google Maps";
+  } catch(error) {
+    if (version !== routeEstimate.version || key !== routeKey()) return;
+    console.error("Route estimate failed:",error);
+    routeEstimate.error = true;
+    routeEstimate.text = "소요시간을 불러오지 못했습니다. 잠시 후 다시 시도하거나 구글 길찾기를 이용해 주세요.";
+  } finally {
+    if (version === routeEstimate.version) { routeEstimate.loading = false; renderRoute(); }
+  }
 };
 
 $("routeBtn").onclick = () => {
