@@ -15,6 +15,18 @@
 }
 
 * { box-sizing:border-box; }
+.google-search { position:absolute;top:16px;left:16px;z-index:4;background:#fff;border-radius:12px;padding:12px;width:min(370px,calc(100% - 80px));box-shadow:0 2px 12px #25354a26; }
+.google-search-form { display:flex;gap:8px; }
+.google-search-form input { width:0;flex:1;min-width:0;border:1px solid #dbe1e8;border-radius:8px;padding:10px; }
+.google-search-form .btn { width:auto;padding:10px 14px; }
+.google-search p:empty { display:none; }
+.google-search .search-error { color:#c83434; }
+.google-search-result { display:block;text-align:left;width:100%;border:0;border-top:1px solid var(--line);background:#fff;padding:10px 2px;color:var(--ink); }
+.google-search-result[aria-pressed="true"] { background:#edf5ff; }
+.google-search-result small { display:block;color:var(--muted);margin-top:5px; }
+#googleSearchResults { max-height:240px;overflow:auto; }
+#saveSearchPlace { margin-top:10px; }
+#clearSearchPlace { margin-top:8px; }
 
 body {
   margin:0;
@@ -273,6 +285,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 .mapnote {
+  display:none;
   position:absolute;
   left:15px;
   top:15px;
@@ -979,6 +992,16 @@ h3 { font-size:14px;margin:20px 0 9px; }
   <main class="map-wrap">
 
     <div id="map"></div>
+    <section class="google-search" aria-label="Google 지도 검색">
+      <form id="googleSearchForm" class="google-search-form">
+        <input id="googleSearchInput" aria-label="장소·주소 검색" placeholder="장소·주소 검색" maxlength="200" autocomplete="off" required>
+        <button id="googleSearchSubmit" class="btn" type="submit">검색</button>
+      </form>
+      <p id="googleSearchStatus" role="status" aria-live="polite" class="muted"></p>
+      <div id="googleSearchResults"></div>
+      <button id="saveSearchPlace" class="btn hidden" type="button">이 장소 저장</button>
+      <button id="clearSearchPlace" class="small-btn hidden" type="button">검색 닫기</button>
+    </section>
 
     <div id="mapnote" class="mapnote">
       Google Maps · 카테고리별 픽토그램으로
@@ -2380,6 +2403,99 @@ function syncMarkers() {
 /* ======================================
    11. Google Maps 초기화
 ====================================== */
+
+const googleSearchState = {busy:false,blocked:false,version:0,places:[],selected:null,marker:null};
+function searchMessage(text,error=false) {
+  $("googleSearchStatus").textContent=text;
+  $("googleSearchStatus").classList.toggle("search-error",error);
+}
+function clearGoogleSelection() {
+  if(googleSearchState.marker) googleSearchState.marker.setMap(null);
+  googleSearchState.marker=null;
+  googleSearchState.selected=null;
+  $("saveSearchPlace").classList.add("hidden");
+}
+function selectGoogleResult(index) {
+  const p=googleSearchState.places[index];
+  if(!p || !map) return;
+  clearGoogleSelection();
+  googleSearchState.selected=p;
+  map.panTo({lat:p.lat,lng:p.lng});
+  map.setZoom(16);
+  googleSearchState.marker=new google.maps.Marker({
+    map,position:{lat:p.lat,lng:p.lng},title:p.name,
+    icon:{path:google.maps.SymbolPath.CIRCLE,scale:11,fillColor:"#e25531",fillOpacity:1,strokeColor:"#fff",strokeWeight:3}
+  });
+  $("saveSearchPlace").classList.remove("hidden");
+  $("googleSearchResults").querySelectorAll("button").forEach((button,i)=>button.setAttribute("aria-pressed",String(i===index)));
+}
+function renderGoogleResults() {
+  $("googleSearchResults").innerHTML=googleSearchState.places.map((p,i)=>
+    '<button type="button" class="google-search-result" data-google-result="'+i+'" aria-pressed="false"><strong>'+esc(p.name)+'</strong><small>'+esc(p.address)+'</small></button>'
+  ).join("");
+}
+$("googleSearchResults").onclick=event=>{
+  const button=event.target.closest("[data-google-result]");
+  if(button) selectGoogleResult(Number(button.dataset.googleResult));
+};
+$("clearSearchPlace").onclick=()=>{
+  googleSearchState.version++;
+  clearGoogleSelection();
+  googleSearchState.places=[];
+  $("googleSearchResults").innerHTML="";
+  $("clearSearchPlace").classList.add("hidden");
+  if(!googleSearchState.blocked) searchMessage("");
+};
+$("saveSearchPlace").onclick=()=>{
+  const p=googleSearchState.selected;
+  if(!p) return;
+  openAdd();
+  $("newName").value=p.name.slice(0,100);
+  pendingLocation={lat:p.lat,lng:p.lng};
+  $("locationStatus").textContent="✓ 검색한 장소의 지도 위치가 선택되어 있습니다.";
+  $("modalIntro").textContent="검색한 장소입니다. 카테고리·지역과 필요한 정보를 확인한 뒤 저장해 주세요.";
+};
+$("googleSearchForm").onsubmit=async event=>{
+  event.preventDefault();
+  if(googleSearchState.busy || googleSearchState.blocked) return;
+  const query=$("googleSearchInput").value.trim();
+  if(query.length<2) return searchMessage("검색어를 2자 이상 입력하세요.",true);
+  if(!map) return searchMessage("지도를 불러온 후 다시 검색해 주세요.",true);
+  googleSearchState.busy=true;
+  const version=++googleSearchState.version;
+  $("googleSearchSubmit").disabled=true;
+  clearGoogleSelection();
+  googleSearchState.places=[];
+  $("googleSearchResults").innerHTML="";
+  searchMessage("검색 중…");
+  try {
+    const response=await fetch(SUPABASE_URL+"/functions/v1/map-place-search",{
+      method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({query})
+    });
+    const data=await response.json();
+    if(version!==googleSearchState.version) return;
+    if(data.code==="MONTHLY_LIMIT") {
+      googleSearchState.blocked=true;
+      return searchMessage("월 검색 사용량을 초과하여 검색할 수 없습니다.",true);
+    }
+    if(!response.ok) throw new Error(data.message || "검색을 일시적으로 사용할 수 없습니다.");
+    googleSearchState.places=data.places||[];
+    renderGoogleResults();
+    $("clearSearchPlace").classList.remove("hidden");
+    searchMessage(googleSearchState.places.length ? "검색 결과를 선택하세요." : "검색 결과가 없습니다.");
+    if(googleSearchState.places.length) selectGoogleResult(0);
+    if(data.used>=4999) {
+      googleSearchState.blocked=true;
+      searchMessage("월 검색 사용량을 초과하여 검색할 수 없습니다. 현재 결과는 저장할 수 있습니다.",true);
+    }
+  } catch(error) {
+    if(version===googleSearchState.version) searchMessage(error.message || "검색에 실패했습니다.",true);
+  } finally {
+    googleSearchState.busy=false;
+    $("googleSearchSubmit").disabled=googleSearchState.blocked;
+  }
+};
 
 function initMap() {
 
