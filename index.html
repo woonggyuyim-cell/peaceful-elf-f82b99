@@ -21,7 +21,7 @@
 .google-search-form input { width:0;flex:1;min-width:0;border:1px solid #dbe1e8;border-radius:8px;padding:10px; }
 .google-search-form .btn { width:auto;padding:10px 14px; }
 .google-search p:empty { display:none; }
-.google-search .search-error { color:#c83434; }
+.google-search .search-error { color:#c83434;font-size:11px;line-height:1.5;word-break:keep-all; }
 .google-search-result { display:block;text-align:left;width:100%;border:0;border-top:1px solid var(--line);background:#fff;padding:10px 2px;color:var(--ink); }
 .google-search-result[aria-pressed="true"] { background:#edf5ff; }
 .google-search-result small { display:block;color:var(--muted);margin-top:5px; }
@@ -654,7 +654,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 
 .route-result { margin-top:8px;padding:10px;background:#f4f8fc;border-radius:10px;font-size:12px;font-weight:700;text-align:center;line-height:1.6;white-space:pre-line; }
-.route-result.error { background:#fff1f1;color:#b43d3d; }
+.route-result.error { background:#fff1f1;color:#b43d3d;font-size:11px;line-height:1.5;white-space:normal;word-break:keep-all; }
 
 .facts {
   display:grid;
@@ -733,7 +733,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 .comments-panel summary:focus-visible { outline:2px solid var(--blue);outline-offset:-3px; }
 .comments-content { padding:13px; }
-.comment-warning { color:#b91c1c;font-size:12px;line-height:1.6;margin:0 0 10px; }
+.comment-warning { color:#b91c1c;font-size:11px;line-height:1.5;margin:0 0 10px;word-break:keep-all; }
 .school-filter-group { margin-top:10px;border-top:1px solid var(--line);padding-top:10px; }
 .school-filter-group summary { cursor:pointer;font-size:12px;font-weight:bold; }
 .school-filter-group .tags { margin-top:9px; }
@@ -2480,7 +2480,7 @@ $("googleSearchForm").onsubmit=async event=>{
     if(version!==googleSearchState.version) return;
     if(data.code==="MONTHLY_LIMIT") {
       googleSearchState.blocked=true;
-      return searchMessage("월 검색 사용량을 초과하여 검색할 수 없습니다.",true);
+      return searchMessage("월 검색 한도를 초과했습니다.",true);
     }
     if(!response.ok) throw new Error(data.message || "검색을 일시적으로 사용할 수 없습니다.");
     googleSearchState.places=data.places||[];
@@ -2490,7 +2490,7 @@ $("googleSearchForm").onsubmit=async event=>{
     if(googleSearchState.places.length) selectGoogleResult(0);
     if(data.used>=4999) {
       googleSearchState.blocked=true;
-      searchMessage("월 검색 사용량을 초과하여 검색할 수 없습니다. 현재 결과는 저장할 수 있습니다.",true);
+      searchMessage("월 검색 한도를 초과했습니다.",true);
     }
   } catch(error) {
     if(version===googleSearchState.version) searchMessage(error.message || "검색에 실패했습니다.",true);
@@ -2576,7 +2576,7 @@ function commentPanel(p) {
       <summary>댓글 달기</summary>
       <div class="comments-content">
         <form id="commentForm" class="comment-form">
-          <p class="comment-warning">댓글은 등록 후 수정 및 삭제할 수 없으니 신중하게 작성해 주세요.</p>
+          <p class="comment-warning">댓글은 수정·삭제가 불가하니 신중히 작성해 주세요.</p>
           <textarea id="commentBody" aria-label="댓글 내용" maxlength="1000" placeholder="이 장소에 대한 경험이나 의견을 남겨 주세요."></textarea>
           <div class="comment-actions"><button id="commentSubmit" class="btn" type="submit">댓글 등록</button></div>
           <p class="muted">등록한 댓글은 모든 방문자에게 공개됩니다.</p>
@@ -2988,7 +2988,7 @@ function selectPlace(id,fromMap=false) {
 
 const routeEstimate = {key:"",version:0,loading:false,text:"",error:false};
 let routeQuotaBlocked=false;
-const ROUTE_LIMIT_MESSAGE="월 소요시간 조회 사용량을 초과하여 조회할 수 없습니다. 구글 길찾기를 이용해 주세요.";
+const ROUTE_LIMIT_MESSAGE="월 소요시간 조회 한도를 초과했습니다.";
 
 function routeKey() {
   return JSON.stringify([getPlace(routeOrigin),getPlace(routeDestination)].map(p => p ? [p.id,p.lat,p.lng,p.query,p.name,p.area] : null));
@@ -3115,7 +3115,7 @@ $("estimateRoute").onclick = async () => {
     if (version !== routeEstimate.version || key !== routeKey()) return;
     console.error("Route estimate failed:",error);
     routeEstimate.error = true;
-    routeEstimate.text = quotaMessage || "소요시간을 불러오지 못했습니다. 잠시 후 다시 시도하거나 구글 길찾기를 이용해 주세요.";
+    routeEstimate.text = quotaMessage || "조회에 실패했으니 구글 길찾기를 이용해 주세요.";
   } finally {
     if (version === routeEstimate.version) { routeEstimate.loading = false; renderRoute(); }
   }
@@ -3936,10 +3936,10 @@ loadData();
     const script=document.createElement("script");
     script.async=true;
     script.src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async";
-    script.onerror=()=>showBlockedMap("지도를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
+    script.onerror=()=>showBlockedMap("지도를 불러올 수 없으니 잠시 후 새로고침해 주세요.");
     document.head.appendChild(script);
   } catch {
-    showBlockedMap("지도 사용량을 확인할 수 없어 지도를 불러오지 않았습니다. 잠시 후 새로고침해 주세요.");
+    showBlockedMap("지도를 불러올 수 없으니 잠시 후 새로고침해 주세요.");
   }
 })();
 </script>
