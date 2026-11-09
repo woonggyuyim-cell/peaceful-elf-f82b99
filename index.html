@@ -1153,7 +1153,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
         <option value="school">학교</option>
         <option value="market">마트·쇼핑</option>
         <option value="hospital">병원</option>
-        <option value="restaurant">식당</option>
+        <option value="restaurant">식당·카페</option>
       </select>
 
     </div>
@@ -1429,7 +1429,7 @@ const categories = {
     color:"#d95463"
   },
   restaurant:{
-    label:"식당",
+    label:"식당·카페",
     color:"#9364c7"
   }
 };
@@ -2440,6 +2440,7 @@ $("googleSearchResults").onclick=event=>{
   if(button) selectGoogleResult(Number(button.dataset.googleResult));
 };
 $("clearSearchPlace").onclick=()=>{
+  $("googleSearchInput").value="";
   googleSearchState.version++;
   clearGoogleSelection();
   googleSearchState.places=[];
