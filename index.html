@@ -146,10 +146,19 @@ h3 { font-size:14px;margin:20px 0 9px; }
 .hidden { display:none!important; }
 
 .legend {
+  flex-direction:column;
   font-size:11px;
   color:var(--muted);
   margin:15px 0;
 }
+
+.legend-row {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:9px;
+}
+.legend-row > span { white-space:nowrap; }
 
 .dot {
   display:inline-block;
@@ -1922,18 +1931,17 @@ $("clearSchoolFilters").onclick = () => {
 
 function renderLegend() {
 
-  $("legend").innerHTML =
-    Object.entries(categories)
-      .filter(([key]) => key !== "all")
-      .map(([key,value]) => `
-        <span>
-          <i
-            class="dot"
-            style="background:${value.color}"
-          ></i>
-          ${value.label}
-        </span>
-      `).join("");
+  const legendRows = [
+    ["home", "school", "market", "hospital"],
+    ["restaurant", "company", "attraction"]
+  ];
+  $("legend").innerHTML = legendRows.map(keys => `
+    <div class="legend-row">
+      ${keys.map(key => `
+        <span><i class="dot" style="background:${categories[key].color}"></i>${categories[key].label}</span>
+      `).join("")}
+    </div>
+  `).join("");
 }
 
 /* ======================================
