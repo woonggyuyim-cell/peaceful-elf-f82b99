@@ -1183,7 +1183,17 @@ h3 { font-size:14px;margin:20px 0 9px; }
         <option value="Nuevo Sur">Nuevo Sur</option>
         <option value="Carretera Nacional">Carretera Nacional</option>
         <option value="Apodaca">Apodaca</option>
+        <option value="Pesqueria">Pesqueria</option>
       </select>
+      <button id="addRegionToggle" type="button" class="small-btn" style="margin-top:8px;width:100%">＋ 지역 추가</button>
+      <div id="newRegionEditor" class="hidden" style="margin-top:8px">
+        <input id="newRegionName" aria-label="추가할 지역 이름" placeholder="지역 이름 입력" maxlength="40" autocomplete="off">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="saveRegion" type="button" class="btn" style="flex:1">추가</button>
+          <button id="cancelRegion" type="button" class="btn secondary" style="flex:1">취소</button>
+        </div>
+      </div>
+      <p id="regionStatus" class="muted" role="status" style="margin:6px 0 0"></p>
 
     </div>
 
@@ -1375,7 +1385,28 @@ const db = window.supabase.createClient(
 
 const $ = id => document.getElementById(id);
 
-const schoolAreas = ["Santa Catarina","San Pedro","Monterrey","Apodaca"];
+const schoolAreas = ["Santa Catarina","San Pedro","Monterrey","Apodaca","Pesqueria"];
+let customRegions=["Pesqueria"];
+let regionsLoad=null;
+let addingRegion=false;
+function regionChoices() {
+  const defaults=$("newCategory").value==="school" ? schoolAreas : ["Santa Catarina","San Pedro","Nuevo Sur","Carretera Nacional","Apodaca","Pesqueria"];
+  return [...new Map([...defaults,...customRegions].map(name=>[name.toLocaleLowerCase(),name])).values()];
+}
+async function loadRegions() {
+  if(regionsLoad) return regionsLoad;
+  regionsLoad=(async()=>{
+    try {
+      const {data,error}=await db.from("map_regions").select("name").order("name").limit(1000);
+      if(error) throw error;
+      customRegions=[...new Set(["Pesqueria",...(data||[]).map(r=>r.name)])];
+      setArea($("newArea").value);
+    } catch(error) {
+      console.error("Regions could not load:",error);
+    }
+  })();
+  try {await regionsLoad;} finally {regionsLoad=null;}
+}
 const schoolLevels = ["유치원","초등학교","중학교","고등학교","대학교"];
 const schoolLanguages = ["영어 위주","영어 + 스페인어","스페인어 위주"];
 const schoolRatios = {"많음":"high","중간":"medium","적음":"low"};
@@ -3167,6 +3198,8 @@ $("routeBtn").onclick = () => {
 
 function openModal() {
 
+  loadRegions();
+
   $("modalOverlay").classList.remove(
     "hidden"
   );
@@ -3175,6 +3208,9 @@ function openModal() {
 }
 
 function closeModal() {
+
+  $("newRegionEditor").classList.add("hidden");
+  $("regionStatus").textContent="";
 
   $("modalOverlay").classList.add(
     "hidden"
@@ -3185,9 +3221,7 @@ function setArea(value) {
 
   const select = $("newArea");
 
-  const areas = $("newCategory").value === "school"
-    ? schoolAreas
-    : ["Santa Catarina","San Pedro","Nuevo Sur","Carretera Nacional","Apodaca"];
+  const areas = regionChoices();
 
   select.innerHTML = '<option value="">지역 선택</option>' +
     areas.map(area => `<option value="${esc(area)}">${esc(area)}</option>`).join("");
@@ -3211,6 +3245,57 @@ function setArea(value) {
 
   select.value = value || "";
 }
+
+
+$("addRegionToggle").onclick=()=>{
+  $("newRegionEditor").classList.remove("hidden");
+  $("newRegionName").focus();
+  $("regionStatus").textContent="추가한 지역은 모든 사용자에게 공유됩니다.";
+};
+$("cancelRegion").onclick=()=>{
+  $("newRegionEditor").classList.add("hidden");
+  $("newRegionName").value="";
+  $("regionStatus").textContent="";
+};
+$("saveRegion").onclick=async()=>{
+  if(addingRegion) return;
+  const name=$("newRegionName").value.normalize("NFC").trim().replace(/\s+/g," ");
+  if(name.length<2||name.length>40) {
+    $("regionStatus").textContent="지역 이름을 2~40자로 입력하세요.";
+    return;
+  }
+  const existing=regionChoices().find(value=>value.toLocaleLowerCase()===name.toLocaleLowerCase());
+  if(existing) {
+    setArea(existing);
+    $("cancelRegion").click();
+    $("regionStatus").textContent="이미 등록된 지역을 선택했습니다.";
+    return;
+  }
+  addingRegion=true;
+  $("saveRegion").disabled=true;
+  $("newRegionName").disabled=true;
+  $("regionStatus").textContent="지역을 저장하는 중…";
+  try {
+    const {data,error}=await db.from("map_regions").insert({name}).select("name").single();
+    if(error && error.code!=="23505") throw error;
+    await loadRegions();
+    const saved=data?.name||customRegions.find(value=>value.toLocaleLowerCase()===name.toLocaleLowerCase());
+    if(!saved) throw new Error("지역 목록을 다시 불러와 주세요.");
+    if(!customRegions.includes(saved)) customRegions.push(saved);
+    setArea(saved);
+    $("cancelRegion").click();
+    $("regionStatus").textContent="지역을 추가하고 선택했습니다.";
+  } catch(error) {
+    $("regionStatus").textContent="지역 저장 실패: "+(error.message||"잠시 후 다시 시도해 주세요.");
+  } finally {
+    addingRegion=false;
+    $("saveRegion").disabled=false;
+    $("newRegionName").disabled=false;
+  }
+};
+$("newRegionName").addEventListener("keydown",event=>{
+  if(event.key==="Enter"){event.preventDefault();$("saveRegion").click();}
+});
 
 function updateHomeFields() {
 
@@ -3647,10 +3732,10 @@ $("saveNew").onclick = async () => {
 
   if (
     category === "school" &&
-    !schoolAreas.includes(area) &&
+    !regionChoices().includes(area) &&
     (!editing || editing.type !== "school" || editing.area !== area)
   ) {
-    alert("학교 위치는 Santa Catarina, San Pedro, Monterrey, Apodaca 중 선택하세요.");
+    alert("등록된 지역을 선택하세요.");
     return;
   }
 
@@ -3903,6 +3988,7 @@ $("search").addEventListener(
 render();
 
 loadData();
+loadRegions();
 
 /*
   자동 20초 조회 없음.
