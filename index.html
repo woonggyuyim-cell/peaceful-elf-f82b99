@@ -956,11 +956,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
         </button>
       </div>
 
-      <div id="housingFilters" class="tags"></div>
+      <div id="housingFilters"></div>
 
       <p class="muted">
-        여러 조건을 선택하면 선택한 조건을 모두
-        만족하는 주택이 표시됩니다.
+        같은 항목 안에서는 하나라도, 다른 항목끼리는 모두 일치하는 주택을 표시합니다.
       </p>
 
     </div>
@@ -1265,10 +1264,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
       <div class="field">
 
         <label>
-          주택 추천 필터 (복수 선택 가능)
+          주택 조건 (항목별 선택)
         </label>
 
-        <div id="editHousingTags" class="tags"></div>
+        <div id="editHousingTags"></div>
 
       </div>
 
@@ -1471,16 +1470,24 @@ const categories = {
   }
 };
 
-const housingTags = [
-  "3인 가족",
-  "4인 가족",
-  "자연",
-  "도심",
-  "넓은 집",
-  "반려견",
-  "아파트",
-  "까사"
+const housingGroups = [
+  {key:"type",label:"주거형태",options:[["아파트","아파트"],["까사","까사"]]},
+  {key:"members",label:"구성원",options:[["1-2인","1-2인"],["3인 가족","3인"],["4인 가족","4인"]]},
+  {key:"environment",label:"주변 환경",options:[["도심","도심"],["자연","자연"]]},
+  {key:"pets",label:"반려견",options:[["반려견","가능"],["반려견 불가능","불가능"]]}
 ];
+const housingTags=[...housingGroups.flatMap(group=>group.options.map(([value])=>value)),"넓은 집"];
+function housingTagLabel(tag) {
+  if(tag==="반려견") return "반려견 가능";
+  if(tag==="반려견 불가능") return "반려견 불가능";
+  return housingGroups.flatMap(group=>group.options).find(([value])=>value===tag)?.[1] || tag;
+}
+function matchesHousingFilters(tags) {
+  return housingGroups.every(group=>{
+    const selected=group.options.map(([value])=>value).filter(value=>activeTags.includes(value));
+    return !selected.length || selected.some(value=>tags.includes(value));
+  });
+}
 
 /* ======================================
    3. 픽토그램
@@ -1568,6 +1575,7 @@ let mapHighlightedId = null;
 
 let activeCategory = "all";
 let activeTags = [];
+const housingFilterOpen={type:false,members:false,environment:false,pets:false};
 const activeSchoolFilters = {ratio:[],levels:[],language:[]};
 const schoolFilterOpen = {ratio:false,levels:false,language:false};
 
@@ -1776,9 +1784,7 @@ function visiblePlaces() {
       activeCategory === "home" &&
       activeTags.length
     ) {
-      return activeTags.every(tag =>
-        (p.housing_tags || []).includes(tag)
-      );
+      return matchesHousingFilters(p.housing_tags || []);
     }
 
     if (activeCategory === "school") {
@@ -1824,34 +1830,7 @@ function renderFilters() {
     activeCategory !== "home"
   );
 
-  $("housingFilters").innerHTML =
-    housingTags.map(tag => `
-      <button
-        class="tag ${
-          activeTags.includes(tag) ? "active" : ""
-        }"
-        data-tag="${esc(tag)}"
-      >
-        ${esc(tag)}
-      </button>
-    `).join("");
-
-  document.querySelectorAll("[data-tag]")
-    .forEach(button => {
-
-      button.onclick = () => {
-
-        const tag = button.dataset.tag;
-
-        activeTags = activeTags.includes(tag)
-          ? activeTags.filter(x => x !== tag)
-          : [...activeTags,tag];
-
-        mapHighlightedId = null;
-
-        render();
-      };
-    });
+  renderHousingFilters();
   renderSchoolFilters();
 }
 
@@ -1860,6 +1839,29 @@ $("clearTags").onclick = () => {
   render();
 };
 
+
+function renderHousingFilters() {
+  $("housingFilters").innerHTML=housingGroups.map(group=>`
+    <details class="school-filter-group" data-housing-group="${group.key}" ${housingFilterOpen[group.key] ? "open" : ""}>
+      <summary>${group.label}${group.options.filter(([value])=>activeTags.includes(value)).length ? " · "+group.options.filter(([value])=>activeTags.includes(value)).length+"개 선택" : ""}</summary>
+      <div class="tags">${group.options.map(([value,label])=>`
+        <button type="button" class="tag ${activeTags.includes(value) ? "active" : ""}"
+          data-housing-filter="${esc(value)}" aria-pressed="${activeTags.includes(value)}">${esc(label)}</button>
+      `).join("")}</div>
+    </details>
+  `).join("");
+  document.querySelectorAll("[data-housing-group]").forEach(el=>{
+    el.addEventListener("toggle",()=>{if(el.isConnected)housingFilterOpen[el.dataset.housingGroup]=el.open;});
+  });
+  document.querySelectorAll("[data-housing-filter]").forEach(button=>{
+    button.onclick=()=>{
+      const value=button.dataset.housingFilter;
+      activeTags=activeTags.includes(value) ? activeTags.filter(tag=>tag!==value) : [...activeTags,value];
+      mapHighlightedId=null;
+      render();
+    };
+  });
+}
 
 function renderSchoolFilters() {
   $("schoolFilterSection").classList.toggle("hidden",activeCategory !== "school");
@@ -2831,7 +2833,7 @@ function renderDetail() {
 
           ${p.housing_tags.map(tag =>
             `<span class="tag active">
-              ${esc(tag)}
+              ${esc(housingTagLabel(tag))}
             </span>`
           ).join("")}
 
@@ -3333,27 +3335,28 @@ $("newSchoolRatio").onchange = () => {
 };
 
 function renderEditTags(selected=[]) {
-
-  $("editHousingTags").innerHTML =
-    housingTags.map(tag => `
-      <label
-        class="tag"
-      >
-
-        <input
-          type="checkbox"
-          value="${esc(tag)}"
-          ${
-            selected.includes(tag)
-              ? "checked"
-              : ""
-          }
-        >
-
-        ${esc(tag)}
-
-      </label>
-    `).join("");
+  $("editHousingTags").innerHTML=housingGroups.map(group=>`
+    <details class="school-filter-group">
+      <summary>${group.label}</summary>
+      <div class="tags">${group.options.map(([value,label])=>`
+        <label class="tag"><input type="${group.key==="pets" ? "radio" : "checkbox"}" name="housing-${group.key}"
+          value="${esc(value)}" ${selected.includes(value) ? "checked" : ""}> ${esc(label)}</label>
+      `).join("")}</div>
+    </details>
+  `).join("");
+  // Preserve existing tags outside the new groups when the place is edited.
+  const grouped=new Set(housingGroups.flatMap(group=>group.options.map(([value])=>value)));
+  selected.filter(value=>!grouped.has(value)).forEach(value=>{
+    const input=document.createElement("input");
+    input.type="hidden";input.dataset.preservedTag="true";input.value=value;
+    $("editHousingTags").appendChild(input);
+  });
+  const other=selected.filter(value=>!grouped.has(value));
+  if(other.length) {
+    const note=document.createElement("p");note.className="muted";
+    note.textContent="기존 정보 유지: "+other.join(", ");
+    $("editHousingTags").appendChild(note);
+  }
 }
 
 function openAdd() {
@@ -3703,7 +3706,7 @@ $("saveNew").onclick = async () => {
       ? Array.from(
           $("editHousingTags")
             .querySelectorAll(
-              'input[type="checkbox"]:checked'
+              'input:checked, input[data-preserved-tag]'
             )
         ).map(input => input.value)
 
