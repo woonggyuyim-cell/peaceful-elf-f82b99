@@ -2987,6 +2987,8 @@ function selectPlace(id,fromMap=false) {
 ====================================== */
 
 const routeEstimate = {key:"",version:0,loading:false,text:"",error:false};
+let routeQuotaBlocked=false;
+const ROUTE_LIMIT_MESSAGE="월 소요시간 조회 사용량을 초과하여 조회할 수 없습니다. 구글 길찾기를 이용해 주세요.";
 
 function routeKey() {
   return JSON.stringify([getPlace(routeOrigin),getPlace(routeDestination)].map(p => p ? [p.id,p.lat,p.lng,p.query,p.name,p.area] : null));
@@ -3034,7 +3036,8 @@ function renderRoute() {
   if (routeEstimate.key !== routeKey()) {
     Object.assign(routeEstimate,{key:routeKey(),version:routeEstimate.version+1,loading:false,text:"",error:false});
   }
-  $("estimateRoute").disabled = !a || !b || a.id === b.id || routeEstimate.loading;
+  if(routeQuotaBlocked) Object.assign(routeEstimate,{error:true,text:ROUTE_LIMIT_MESSAGE});
+  $("estimateRoute").disabled = !a || !b || a.id === b.id || routeEstimate.loading || routeQuotaBlocked || !map;
   $("estimateRoute").textContent = routeEstimate.loading ? "조회 중..." : "소요시간 보기";
   $("routeResult").classList.toggle("hidden",!routeEstimate.text);
   $("routeResult").classList.toggle("error",routeEstimate.error);
@@ -3072,15 +3075,27 @@ $("resetRoute").onclick = () => {
 
 $("estimateRoute").onclick = async () => {
   const a = getPlace(routeOrigin), b = getPlace(routeDestination);
-  if (!a || !b || a.id === b.id || routeEstimate.loading) return;
+  if (!a || !b || a.id === b.id || routeEstimate.loading || routeQuotaBlocked || !map) return;
+  if(!validCoord(a)||!validCoord(b)) { alert("출발지와 도착지의 지도 위치를 먼저 등록해 주세요."); return; }
   renderRoute();
   const key = routeKey(), version = ++routeEstimate.version;
   Object.assign(routeEstimate,{loading:true,error:false,text:"운전 소요시간을 확인하는 중..."});
   renderRoute();
-  const point = p => validCoord(p) ? {lat:Number(p.lat),lng:Number(p.lng)}
-    : p.query || p.name + " " + (p.area || "") + " Nuevo León México";
+  const point = p => ({lat:Number(p.lat),lng:Number(p.lng)});
+  let quotaMessage="";
   try {
     if (!window.google?.maps?.importLibrary) throw new Error("Map not ready");
+    const gate=await fetch(SUPABASE_URL+"/functions/v1/map-route-gate",{
+      method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:"{}",
+      signal:AbortSignal.timeout(15000)
+    });
+    const quota=await gate.json();
+    if(!gate.ok || quota.allowed!==true) {
+      if(quota.code==="MONTHLY_LIMIT") routeQuotaBlocked=true;
+      quotaMessage=quota.message || "소요시간 조회 사용량을 확인할 수 없어 요청을 중단했습니다.";
+      throw new Error("Route quota blocked");
+    }
+    if(version!==routeEstimate.version || key!==routeKey()) return;
     const {Route} = await google.maps.importLibrary("routes");
     const {routes} = await Route.computeRoutes({
       origin:point(a),destination:point(b),travelMode:"DRIVING",
@@ -3100,7 +3115,7 @@ $("estimateRoute").onclick = async () => {
     if (version !== routeEstimate.version || key !== routeKey()) return;
     console.error("Route estimate failed:",error);
     routeEstimate.error = true;
-    routeEstimate.text = "소요시간을 불러오지 못했습니다. 잠시 후 다시 시도하거나 구글 길찾기를 이용해 주세요.";
+    routeEstimate.text = quotaMessage || "소요시간을 불러오지 못했습니다. 잠시 후 다시 시도하거나 구글 길찾기를 이용해 주세요.";
   } finally {
     if (version === routeEstimate.version) { routeEstimate.loading = false; renderRoute(); }
   }
