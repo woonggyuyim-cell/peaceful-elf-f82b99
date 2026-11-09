@@ -15,6 +15,7 @@
 }
 
 * { box-sizing:border-box; }
+.map-load-message { display:flex;align-items:center;justify-content:center;height:100%;padding:110px 28px 30px;text-align:center;color:#b52c2c;background:#f5f7fa;font-size:15px;line-height:1.8; }
 .google-search { position:absolute;top:16px;left:16px;z-index:4;background:#fff;border-radius:12px;padding:12px;width:min(370px,calc(100% - 80px));box-shadow:0 2px 12px #25354a26; }
 .google-search-form { display:flex;gap:8px; }
 .google-search-form input { width:0;flex:1;min-width:0;border:1px solid #dbe1e8;border-radius:8px;padding:10px; }
@@ -3890,11 +3891,43 @@ loadData();
 
 </script>
 
-<script
-  async
-  defer
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async"
-></script>
+<script>
+(async function loadGoogleMapWithinQuota() {
+  const showBlockedMap=message=>{
+    const node=document.createElement("div");
+    node.className="map-load-message";
+    node.setAttribute("role","status");
+    node.textContent=message;
+    $("map").replaceChildren(node);
+    $("googleSearchSubmit").disabled=true;
+    searchMessage(message,true);
+    $("pickNew").disabled=true;
+  };
+  const pending=document.createElement("div");
+  pending.className="map-load-message";
+  pending.textContent="지도를 불러오는 중…";
+  $("map").replaceChildren(pending);
+  try {
+    // One server reservation per page. No retries: an uncertain attempt still counts.
+    const response=await fetch(SUPABASE_URL+"/functions/v1/map-load-gate",{
+      method:"POST",headers:{apikey:SUPABASE_KEY,"Content-Type":"application/json"},
+      body:"{}",signal:AbortSignal.timeout(15000)
+    });
+    const data=await response.json();
+    if(!response.ok || data.allowed!==true) {
+      showBlockedMap(data.message || "지도 사용량을 확인할 수 없어 지도를 불러오지 않았습니다.");
+      return;
+    }
+    const script=document.createElement("script");
+    script.async=true;
+    script.src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAVhkEY_TI-mBmHwmmrGuomVTmZtVV8f2s&callback=initMap&loading=async";
+    script.onerror=()=>showBlockedMap("지도를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.");
+    document.head.appendChild(script);
+  } catch {
+    showBlockedMap("지도 사용량을 확인할 수 없어 지도를 불러오지 않았습니다. 잠시 후 새로고침해 주세요.");
+  }
+})();
+</script>
 
 </body>
 </html>
