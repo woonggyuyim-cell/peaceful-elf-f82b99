@@ -1,6 +1,6 @@
 const PUBLIC_KEY = "sb_publishable_vsPDFkgGdUkNyHddcGCa5g_nznI41sC";
 const LIMIT = 4999;
-const EXCEEDED = "월 검색 사용량을 초과하여 검색할 수 없습니다.";
+const EXCEEDED = "월 검색 한도를 초과했습니다.";
 const origins = new Set(["https://woonggyuyim-cell.github.io","https://monterrey-living-map.netlify.app"]);
 const dbUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -43,11 +43,11 @@ export async function handler(req:Request) {
         body:JSON.stringify({textQuery:query,pageSize:5,languageCode:"es",regionCode:"MX",
           locationBias:{circle:{center:{latitude:25.65,longitude:-100.345},radius:50000}}}),
         signal:AbortSignal.timeout(15000)});
-    } catch { return reply({code:"SEARCH_FAILED",message:"검색에 실패했습니다. 잠시 후 다시 시도해 주세요.",used:quota.used,limit:LIMIT},502); }
-    if(!google.ok) return reply({code:"SEARCH_FAILED",message:"지도 검색을 사용할 수 없습니다. 관리자에게 문의해 주세요.",used:quota.used,limit:LIMIT},502);
+    } catch { return reply({code:"SEARCH_FAILED",message:"검색에 실패했으니 잠시 후 다시 시도해 주세요.",used:quota.used,limit:LIMIT},502); }
+    if(!google.ok) return reply({code:"SEARCH_FAILED",message:"검색을 사용할 수 없으니 관리자에게 문의해 주세요.",used:quota.used,limit:LIMIT},502);
     const data=await google.json();
     const places=(data.places||[]).filter((p:any)=>Number.isFinite(p.location?.latitude)&&Number.isFinite(p.location?.longitude)).map((p:any)=>({id:p.id,name:p.displayName?.text||query,address:p.formattedAddress||"",lat:p.location.latitude,lng:p.location.longitude}));
     return reply({places,used:quota.used,limit:LIMIT});
-  } catch {return reply({code:"UNAVAILABLE",message:"검색을 일시적으로 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."},503);}
+  } catch {return reply({code:"UNAVAILABLE",message:"검색을 할 수 없으니 잠시 후 다시 시도해 주세요."},503);}
 }
 if(import.meta.main) Deno.serve(handler);
