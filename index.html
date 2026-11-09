@@ -160,6 +160,12 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 .legend-row > span { white-space:nowrap; }
 
+.school-website {
+  color:var(--blue);
+  text-decoration:underline;
+  overflow-wrap:anywhere;
+  line-height:1.6;
+}
 .dot {
   display:inline-block;
   width:9px;
@@ -1245,6 +1251,10 @@ h3 { font-size:14px;margin:20px 0 9px; }
           <option value="스페인어 위주">스페인어 위주</option>
         </select>
       </div>
+      <div class="field">
+        <label for="newSchoolWebsite">홈페이지</label>
+        <input id="newSchoolWebsite" type="url" maxlength="2048" placeholder="https://학교 홈페이지 주소">
+      </div>
     </div>
 
     <div id="homeFields">
@@ -1447,14 +1457,25 @@ function schoolTags(values,allowed) {
     : '<span class="muted">확인 필요</span>';
 }
 
+function schoolWebsiteUrl(value) {
+  try {
+    const url = new URL(String(value || "").trim());
+    return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password ? url.href : "";
+  } catch { return ""; }
+}
+
 function schoolDetail(p) {
   if (p.type !== "school") return "";
+  const website = schoolWebsiteUrl(p.school_website);
   return `
     <div class="facts school-facts">
       <div class="fact"><small>위치</small><b>${esc(p.area || "확인 필요")}</b></div>
       <div class="fact"><small>한국인 학생 비율</small>${ratioBadge(p.school_korean_ratio)}</div>
       <div class="fact wide"><small>학년</small>${schoolTags(p.school_levels,schoolLevels)}</div>
       <div class="fact wide"><small>언어</small>${schoolTags(p.school_languages,schoolLanguages)}</div>
+      <div class="fact wide"><small>홈페이지</small>${website
+        ? `<a class="school-website" href="${esc(website)}" target="_blank" rel="noopener noreferrer">${esc(website)}</a>`
+        : '<span class="muted">미등록</span>'}</div>
     </div>
   `;
 }
@@ -1713,7 +1734,7 @@ async function loadData() {
         "id,name,category,area,lat,lng,query," +
         "rent_2br,rent_3br,buildings,amenities," +
         "note,housing_tags,source,created_at,updated_at," +
-        "school_levels,school_korean_ratio,school_languages"
+        "school_levels,school_korean_ratio,school_languages,school_website"
       )
       .order("created_at",{
         ascending:true
@@ -3358,6 +3379,7 @@ function renderSchoolForm(p={}) {
   $("newSchoolLanguage").value = Array.isArray(p.school_languages) &&
     p.school_languages.length === 1 && schoolLanguages.includes(p.school_languages[0])
       ? p.school_languages[0] : "";
+  $("newSchoolWebsite").value = p.school_website || "";
   $("newSchoolRatio").value = Object.hasOwn(schoolRatios,p.school_korean_ratio) ? p.school_korean_ratio : "";
   $("schoolRatioPreview").innerHTML = ratioBadge($("newSchoolRatio").value);
 }
@@ -3853,6 +3875,14 @@ $("saveNew").onclick = async () => {
       $(id).querySelectorAll('input[type="checkbox"]:checked')
     ).map(input => input.value).filter(value => allowed.includes(value));
 
+    const websiteInput = $("newSchoolWebsite").value.trim();
+    const website = schoolWebsiteUrl(websiteInput);
+    if (websiteInput && (!website || website.length > 2048)) {
+      $("modalStatus").textContent = "홈페이지 주소를 http:// 또는 https://로 시작하도록 입력해 주세요.";
+      $("newSchoolWebsite").focus();
+      return;
+    }
+    payload.school_website = website || null;
     payload.school_levels = checkedValues("editSchoolLevels",schoolLevels);
     const language = $("newSchoolLanguage").value;
     payload.school_languages = schoolLanguages.includes(language) ? [language] : [];
