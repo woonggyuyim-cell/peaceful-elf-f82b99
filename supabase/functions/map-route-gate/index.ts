@@ -16,8 +16,8 @@ export async function handler(req:Request) {
       body:"{}",signal:AbortSignal.timeout(10000)});
     if(!res.ok)throw new Error("database_unavailable");
     const quota=await res.json();
-    if(!quota.allowed)return reply({...quota,code:"MONTHLY_LIMIT",message:"월 소요시간 조회 사용량을 초과하여 조회할 수 없습니다. 구글 길찾기를 이용해 주세요."},429);
+    if(!quota.allowed)return reply({...quota,code:"MONTHLY_LIMIT",message:"월 소요시간 조회 한도를 초과했습니다."},429);
     return reply(quota);
-  }catch{return reply({allowed:false,code:"UNAVAILABLE",message:"소요시간 조회 사용량을 확인할 수 없어 요청을 중단했습니다. 잠시 후 다시 시도해 주세요."},503);}
+  }catch{return reply({allowed:false,code:"UNAVAILABLE",message:"조회를 할 수 없으니 잠시 후 다시 시도해 주세요."},503);}
 }
 if(import.meta.main)Deno.serve(handler);
