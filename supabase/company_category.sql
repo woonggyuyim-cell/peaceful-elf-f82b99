@@ -1,0 +1,1 @@
+alter table public.map_places drop constraint map_places_category_check; alter table public.map_places add constraint map_places_category_check check (category in ('home','school','market','hospital','restaurant','company'));
