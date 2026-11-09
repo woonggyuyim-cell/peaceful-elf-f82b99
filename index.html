@@ -937,7 +937,8 @@ h3 { font-size:14px;margin:20px 0 9px; }
     <input
       id="search"
       class="search"
-      placeholder="주택, 학교, 병원, 식당 검색"
+      placeholder="저장된 주소 검색"
+      aria-label="저장된 주소 검색"
     >
 
     <div id="filters" class="filters"></div>
@@ -994,7 +995,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
     <div id="map"></div>
     <section class="google-search" aria-label="Google 지도 검색">
       <form id="googleSearchForm" class="google-search-form">
-        <input id="googleSearchInput" aria-label="장소·주소 검색" placeholder="장소·주소 검색" maxlength="200" autocomplete="off" required>
+        <input id="googleSearchInput" aria-label="신규 주소 검색" placeholder="신규 주소 검색" maxlength="200" autocomplete="off" required>
         <button id="googleSearchSubmit" class="btn" type="submit">검색</button>
       </form>
       <p id="googleSearchStatus" role="status" aria-live="polite" class="muted"></p>
