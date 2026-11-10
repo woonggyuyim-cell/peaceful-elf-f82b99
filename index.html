@@ -160,6 +160,24 @@ h3 { font-size:14px;margin:20px 0 9px; }
 }
 .legend-row > span { white-space:nowrap; }
 
+.living-cluster {
+  position:absolute;
+  transform:translate(-50%,-50%);
+  width:52px;
+  height:52px;
+  padding:0;
+  border:3px solid #fff;
+  border-radius:50%;
+  background:var(--cluster-color,#345b7e);
+  color:#fff;
+  font:700 17px Arial,sans-serif;
+  box-shadow:0 0 0 6px #345b7e22,0 3px 9px #1e293b33;
+  cursor:pointer;
+  z-index:10;
+}
+.living-cluster:hover { box-shadow:0 0 0 8px #345b7e30,0 3px 9px #1e293b33; }
+.living-cluster:focus-visible { outline:3px solid #172d45; outline-offset:5px; }
+.status[hidden] { display:none; }
 .school-website {
   color:var(--blue);
   text-decoration:underline;
@@ -1011,9 +1029,7 @@ h3 { font-size:14px;margin:20px 0 9px; }
       </button>
     </div>
 
-    <div id="syncStatus" class="status">
-      Supabase 연결 준비 중...
-    </div>
+    <div id="syncStatus" class="status" role="status" hidden></div>
 
     <div id="list"></div>
 
@@ -1621,6 +1637,8 @@ let map = null;
 
 let markers = new Map();
 let LivingMarkerClass = null;
+let LivingClusterClass = null;
+const clusterMarkers = new Map();
 
 let expandedMarkerId = null;
 
@@ -1701,6 +1719,7 @@ function setStatus(text,error=false) {
 
   el.textContent = text;
   el.className = "status" + (error ? " error" : "");
+  el.hidden = !text;
 }
 
 function makeId() {
@@ -1724,7 +1743,7 @@ async function loadData() {
 
   $("refreshBtn").disabled = true;
 
-  setStatus("Supabase 장소 정보를 불러오는 중...");
+  setStatus("장소를 불러오는 중…");
 
   try {
 
@@ -1774,10 +1793,7 @@ async function loadData() {
 
     render();
 
-    setStatus(
-      "✓ Supabase 연결됨 · 전체 장소 " +
-      places.length + "개"
-    );
+    setStatus("");
 
   } catch(error) {
 
@@ -2017,13 +2033,9 @@ function renderList() {
 
           <small>
             ${
-              esc(
-                p.id.startsWith("C-")
-                  ? "추가 장소"
-                  : p.id
-              )
+              esc(p.area || categories[p.type].label)
             }
-            · ${categories[p.type].label}
+
 
             ${
               routeOrigin === p.id
@@ -2135,6 +2147,7 @@ function getLivingMarkerClass() {
         wrapper.appendChild(pill);
 
         this.element = wrapper;
+        wrapper.style.display = this.clustered ? "none" : "";
 
         /*
           실제 텍스트 너비를 측정.
@@ -2421,6 +2434,98 @@ function setExpandedMarker(id) {
    장소 선택만으로 마커를 재생성하지 않음.
 ====================================== */
 
+
+/* Cluster only the currently filtered places, using their distance on screen. */
+function clusterWorldPoint(p) {
+  const sin = Math.sin(Math.max(-85.05112878,Math.min(85.05112878,Number(p.lat))) * Math.PI / 180);
+  return {x:(Number(p.lng)+180)/360,y:0.5-Math.log((1+sin)/(1-sin))/(4*Math.PI)};
+}
+
+function buildClusterGroups(places,zoom,keepId=null) {
+  if (zoom >= 17) return [];
+  const scale = 256 * 2 ** Math.floor(zoom);
+  const groups = [];
+  for (const p of [...places].sort((a,b)=>a.id.localeCompare(b.id))) {
+    if (p.id === keepId) continue;
+    const point = clusterWorldPoint(p);
+    const group = groups.find(g=>Math.hypot((g.x-point.x)*scale,(g.y-point.y)*scale)<=64);
+    if (group) {
+      const count=group.places.length;
+      group.x=(group.x*count+point.x)/(count+1);
+      group.y=(group.y*count+point.y)/(count+1);
+      group.places.push(p);
+    } else groups.push({x:point.x,y:point.y,places:[p]});
+  }
+  return groups.filter(g=>g.places.length>1);
+}
+
+function getLivingClusterClass() {
+  if (LivingClusterClass) return LivingClusterClass;
+  LivingClusterClass = class extends google.maps.OverlayView {
+    constructor(group) {
+      super();
+      this.places=group.places;
+      this.position=new google.maps.LatLng(
+        this.places.reduce((sum,p)=>sum+Number(p.lat),0)/this.places.length,
+        this.places.reduce((sum,p)=>sum+Number(p.lng),0)/this.places.length
+      );
+      this.setMap(map);
+    }
+    onAdd() {
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="living-cluster";
+      button.textContent=this.places.length;
+      button.title=this.places.length+"개 장소 · 눌러서 확대";
+      button.setAttribute("aria-label",button.title);
+      const types=new Set(this.places.map(p=>p.type));
+      button.style.setProperty("--cluster-color",types.size===1 ? categories[this.places[0].type].color : "#345b7e");
+      button.addEventListener("click",event=>{
+        event.stopPropagation();
+        const bounds=new google.maps.LatLngBounds();
+        this.places.forEach(p=>bounds.extend({lat:Number(p.lat),lng:Number(p.lng)}));
+        const previousZoom=Math.floor(map.getZoom());
+        google.maps.event.addListenerOnce(map,"idle",()=>{
+          const zoom=Math.min(17,Math.max(previousZoom+1,map.getZoom()));
+          if (map.getZoom()!==zoom) map.setZoom(zoom);
+        });
+        map.fitBounds(bounds,90);
+      });
+      this.element=button;
+      this.getPanes().overlayMouseTarget.appendChild(button);
+      google.maps.OverlayView.preventMapHitsFrom(button);
+    }
+    draw() {
+      if (!this.element) return;
+      const point=this.getProjection()?.fromLatLngToDivPixel(this.position);
+      if (!point) return;
+      this.element.style.left=point.x+"px";
+      this.element.style.top=point.y+"px";
+    }
+    onRemove() { this.element?.remove(); this.element=null; }
+  };
+  return LivingClusterClass;
+}
+
+function syncClusters(visible) {
+  const groups=pickMode ? [] : buildClusterGroups(visible,map.getZoom() || 11,selectedId);
+  const hiddenIds=new Set(groups.flatMap(g=>g.places.map(p=>p.id)));
+  for (const [id,marker] of markers) {
+    marker.clustered=hiddenIds.has(id);
+    if (marker.element) marker.element.style.display=marker.clustered ? "none" : "";
+  }
+  const nextKeys=new Set();
+  const ClusterClass=getLivingClusterClass();
+  for (const group of groups) {
+    const key=JSON.stringify(group.places.map(p=>[p.id,p.lat,p.lng,p.type]));
+    nextKeys.add(key);
+    if (!clusterMarkers.has(key)) clusterMarkers.set(key,new ClusterClass(group));
+  }
+  for (const [key,cluster] of clusterMarkers) {
+    if (!nextKeys.has(key)) { cluster.setMap(null); clusterMarkers.delete(key); }
+  }
+}
+
 function syncMarkers() {
 
   if (!map) return;
@@ -2495,6 +2600,7 @@ function syncMarkers() {
       selectedId === p.id
     );
   });
+  syncClusters(visible);
 }
 
 /* ======================================
@@ -2622,6 +2728,7 @@ function initMap() {
     }
   });
 
+  map.addListener("idle",syncMarkers);
   syncMarkers();
 }
 
@@ -3643,6 +3750,7 @@ function startPick() {
   }
 
   pickMode = true;
+  syncMarkers();
 
   closeModal();
 
@@ -3678,6 +3786,7 @@ function handleMapPick(point) {
   };
 
   pickMode = false;
+  syncMarkers();
 
   $("pickBanner").classList.add(
     "hidden"
@@ -3694,6 +3803,7 @@ $("pickNew").onclick = startPick;
 $("cancelPick").onclick = () => {
 
   pickMode = false;
+  syncMarkers();
 
   $("pickBanner").classList.add(
     "hidden"
