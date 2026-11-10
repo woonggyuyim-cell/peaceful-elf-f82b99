@@ -783,6 +783,17 @@ h3 { font-size:14px;margin:20px 0 9px; }
 .place-comment { padding:12px 0;border-top:1px solid var(--line); }
 .comment-body { font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere; }
 .comment-date { display:block;margin-top:6px;font-size:11px;color:var(--muted); }
+.comment-feedback { display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px; }
+.comment-feedback .comment-date { margin:0; }
+.comment-reactions { display:flex;align-items:center;gap:7px; }
+.comment-like { display:inline-flex;align-items:center;gap:5px;padding:5px 8px;border:1px solid #dce3eb;border-radius:16px;background:#fff;color:#526478;font-size:11px;cursor:pointer; }
+.comment-like[aria-pressed="true"] { color:#2878d0;border-color:#b6d2ee;background:#eaf3fd; }
+.comment-like:disabled { cursor:default; }
+.comment-report { display:grid;place-items:center;width:25px;height:25px;padding:0;border:1px solid #d5a4a4;border-radius:50%;background:#fff;color:#b43d3d;font-weight:700;font-size:14px;cursor:pointer; }
+.comment-report-dialog { width:min(440px,calc(100% - 28px));max-height:90dvh;overflow:auto;border:0;border-radius:17px;padding:22px;color:var(--text); }
+.comment-report-dialog::backdrop { background:#18283b99; }
+.comment-report-dialog h2 { margin:0;font-size:20px; }
+.comment-report-preview { margin:14px 0;padding:10px;background:#f5f7fa;border-radius:9px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:100px;overflow:auto; }
 .comment-status { margin:8px 0;font-size:12px;line-height:1.6;color:#32714a; }
 .comment-status.error { color:#b43d3d; }
 .comment-more { width:100%;margin-top:8px; }
@@ -1395,6 +1406,26 @@ h3 { font-size:14px;margin:20px 0 9px; }
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
+<dialog id="commentReportDialog" class="comment-report-dialog" aria-labelledby="commentReportTitle">
+  <form id="commentReportForm">
+    <div class="row">
+      <h2 id="commentReportTitle">댓글 신고하기</h2>
+      <button id="commentReportClose" type="button" class="small-btn" aria-label="신고 창 닫기">✕</button>
+    </div>
+    <div id="commentReportPreview" class="comment-report-preview"></div>
+    <div class="field">
+      <label for="commentReportReason">신고 이유</label>
+      <textarea id="commentReportReason" required maxlength="1000" placeholder="신고 이유를 입력해 주세요."></textarea>
+    </div>
+    <p class="muted">신고 내용은 관리자에게만 전달됩니다.</p>
+    <p id="commentReportStatus" class="comment-status error" role="status" aria-live="polite"></p>
+    <div class="form-actions">
+      <button id="commentReportCancel" type="button" class="btn secondary">취소</button>
+      <button id="commentReportSubmit" type="submit" class="btn">신고하기</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 "use strict";
 
@@ -1645,6 +1676,29 @@ let deletingPlaceId = null;
 
 const commentThreads = new Map();
 const COMMENT_PAGE_SIZE = 20;
+const commentReactions = new Map();
+const reactionVisitorId = (() => {
+  let id;
+  try { id=localStorage.getItem("living-map-visitor"); } catch {}
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id || "")) {
+    id=crypto.randomUUID();
+    try { localStorage.setItem("living-map-visitor",id); } catch {}
+  }
+  return id;
+})();
+const likedComments = (() => {
+  try {
+    const ids=JSON.parse(localStorage.getItem("living-map-liked-"+reactionVisitorId) || "[]");
+    return new Set(Array.isArray(ids) ? ids.filter(id=>typeof id==="string") : []);
+  } catch { return new Set(); }
+})();
+let commentReportTarget=null;
+let commentReportBusy=false;
+
+function commentReaction(id) {
+  if (!commentReactions.has(id)) commentReactions.set(id,{count:null,liked:likedComments.has(id),busy:false,version:0});
+  return commentReactions.get(id);
+}
 
 /* ======================================
    5. 공통 함수
@@ -2696,7 +2750,18 @@ function paintComments(id) {
     ? state.items.map(comment => `
       <article class="place-comment" role="listitem">
         <div class="comment-body">${esc(comment.body)}</div>
-        <time class="comment-date" datetime="${esc(comment.created_at)}">${esc(commentDate(comment.created_at))}</time>
+        <div class="comment-feedback">
+          <time class="comment-date" datetime="${esc(comment.created_at)}">${esc(commentDate(comment.created_at))}</time>
+          <div class="comment-reactions">
+            <button type="button" class="comment-like" data-like-comment="${esc(comment.id)}"
+              aria-label="댓글 좋아요" aria-pressed="${commentReaction(comment.id).liked}"
+              ${commentReaction(comment.id).busy || commentReaction(comment.id).liked ? "disabled" : ""}>
+              <span aria-hidden="true">${commentReaction(comment.id).liked ? "♥" : "♡"}</span>
+              좋아요 <b>${commentReaction(comment.id).count ?? "…"}</b>
+            </button>
+            <button type="button" class="comment-report" data-report-comment="${esc(comment.id)}" aria-label="댓글 신고하기" title="댓글 신고하기">!</button>
+          </div>
+        </div>
       </article>
     `).join("")
     : state.loaded && !state.loading
@@ -2737,6 +2802,7 @@ async function loadComments(id,reset=false) {
     state.offset = offset + comments.length;
     state.hasMore = comments.length === COMMENT_PAGE_SIZE;
     state.loaded = true;
+    await loadCommentLikeCounts(id,comments.map(c=>c.id));
   } catch(error) {
     if (version === state.version) {
       state.loadError = "댓글 목록을 불러오지 못했습니다. 접었다 다시 펼쳐 재시도해 주세요.";
@@ -2793,6 +2859,102 @@ async function postComment(id) {
   }
 }
 
+
+async function loadCommentLikeCounts(placeId,ids) {
+  if (!ids.length) return;
+  const versions=new Map(ids.map(id=>[id,commentReaction(id).version]));
+  try {
+    const {data,error}=await db.from("map_comment_like_counts").select("comment_id,like_count").in("comment_id",ids);
+    if (error) throw error;
+    const counts=new Map((data || []).map(row=>[row.comment_id,Number(row.like_count)]));
+    ids.forEach(id=>{
+      const reaction=commentReaction(id);
+      if (reaction.version===versions.get(id)) reaction.count=counts.get(id) || 0;
+    });
+  } catch {
+    // Keep the comment thread usable even if reaction totals are unavailable.
+  }
+  paintComments(placeId);
+}
+
+async function likeComment(placeId,commentId) {
+  const state=commentThread(placeId);
+  if (!state.items.some(c=>c.id===commentId)) return;
+  const reaction=commentReaction(commentId);
+  if (reaction.busy || reaction.liked) return;
+  reaction.busy=true;
+  reaction.version++;
+  paintComments(placeId);
+  try {
+    const {error}=await db.from("map_comment_likes").insert({comment_id:commentId,visitor_id:reactionVisitorId});
+    if (error && error.code!=="23505") throw error;
+    reaction.liked=true;
+    likedComments.add(commentId);
+    try { localStorage.setItem("living-map-liked-"+reactionVisitorId,JSON.stringify([...likedComments])); } catch {}
+    if (!error && reaction.count!==null) reaction.count++;
+    await loadCommentLikeCounts(placeId,[commentId]);
+  } catch {
+    state.message="좋아요를 저장하지 못했습니다. 다시 시도해 주세요.";
+    state.messageError=true;
+  } finally {
+    reaction.busy=false;
+    paintComments(placeId);
+  }
+}
+
+function openCommentReport(placeId,commentId) {
+  const comment=commentThread(placeId).items.find(c=>c.id===commentId);
+  if (!comment || commentReportBusy) return;
+  commentReportTarget={placeId,commentId};
+  $("commentReportPreview").textContent=comment.body;
+  $("commentReportReason").value="";
+  $("commentReportStatus").textContent="";
+  $("commentReportDialog").showModal();
+  $("commentReportReason").focus();
+}
+
+function closeCommentReport() {
+  if (!commentReportBusy) $("commentReportDialog").close();
+}
+$("commentReportClose").onclick=closeCommentReport;
+$("commentReportCancel").onclick=closeCommentReport;
+$("commentReportDialog").addEventListener("cancel",event=>{
+  if (commentReportBusy) event.preventDefault();
+});
+$("commentReportDialog").addEventListener("close",()=>{commentReportTarget=null;});
+$("commentReportForm").onsubmit=async event=>{
+  event.preventDefault();
+  if (!commentReportTarget || commentReportBusy) return;
+  const reason=$("commentReportReason").value.trim();
+  if (!reason || reason.length>1000) {
+    $("commentReportStatus").textContent="신고 이유를 1~1,000자로 입력해 주세요.";
+    $("commentReportReason").focus();
+    return;
+  }
+  const target={...commentReportTarget};
+  commentReportBusy=true;
+  ["commentReportSubmit","commentReportCancel","commentReportClose","commentReportReason"].forEach(id=>$(id).disabled=true);
+  $("commentReportSubmit").textContent="신고 중…";
+  $("commentReportStatus").textContent="";
+  try {
+    const {error}=await db.from("map_comment_reports").insert({
+      comment_id:target.commentId,visitor_id:reactionVisitorId,reason
+    });
+    if (error && error.code!=="23505") throw error;
+    const state=commentThread(target.placeId);
+    state.message=error ? "이미 신고한 댓글입니다." : "신고가 접수되었습니다. 관리자가 확인하겠습니다.";
+    state.messageError=false;
+    $("commentReportDialog").close();
+    paintComments(target.placeId);
+  } catch {
+    $("commentReportStatus").textContent="신고를 보내지 못했습니다. 다시 시도해 주세요.";
+  } finally {
+    commentReportBusy=false;
+    ["commentReportSubmit","commentReportCancel","commentReportClose","commentReportReason"].forEach(id=>$(id).disabled=false);
+    $("commentReportSubmit").textContent="신고하기";
+  }
+};
+
 function mountComments(p) {
   const state = commentThread(p.id);
   const panel = $("placeComments");
@@ -2811,6 +2973,12 @@ function mountComments(p) {
     postComment(p.id);
   };
   $("commentMore").onclick = () => loadComments(p.id);
+  $("commentList").onclick = event => {
+    const like=event.target.closest("[data-like-comment]");
+    const report=event.target.closest("[data-report-comment]");
+    if (like) likeComment(p.id,like.dataset.likeComment);
+    if (report) openCommentReport(p.id,report.dataset.reportComment);
+  };
   paintComments(p.id);
   if (state.open && !state.loaded && !state.loading) loadComments(p.id,true);
 }
