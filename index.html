@@ -3242,6 +3242,26 @@ function selectPlace(id,fromMap=false) {
 ====================================== */
 
 const routeEstimate = {key:"",version:0,loading:false,text:"",error:false};
+let routePolylines = [];
+
+function clearRouteLine() {
+  routePolylines.forEach(polyline=>polyline.setMap(null));
+  routePolylines=[];
+}
+
+function drawRouteLine(route) {
+  clearRouteLine();
+  const polylines=route.createPolylines();
+  if (!polylines.length) throw new Error("No route path");
+  routePolylines=polylines;
+  routePolylines.forEach(polyline=>{
+    polyline.setOptions({strokeColor:"#2878d0",strokeOpacity:0.95,strokeWeight:6,clickable:false,zIndex:3});
+    polyline.setMap(map);
+  });
+  if (route.viewport) {
+    map.fitBounds(route.viewport,{top:100,right:45,bottom:65,left:45});
+  }
+}
 let routeQuotaBlocked=false;
 const ROUTE_LIMIT_MESSAGE="월 소요시간 조회 한도를 초과했습니다.";
 
@@ -3289,6 +3309,7 @@ function renderRoute() {
     !a || !b || a.id === b.id;
 
   if (routeEstimate.key !== routeKey()) {
+    clearRouteLine();
     Object.assign(routeEstimate,{key:routeKey(),version:routeEstimate.version+1,loading:false,text:"",error:false});
   }
   if(routeQuotaBlocked) Object.assign(routeEstimate,{error:true,text:ROUTE_LIMIT_MESSAGE});
@@ -3335,6 +3356,7 @@ $("estimateRoute").onclick = async () => {
   if(!validCoord(a)||!validCoord(b)) { alert("출발지와 도착지의 지도 위치를 먼저 등록해 주세요."); return; }
   renderRoute();
   const key = routeKey(), version = ++routeEstimate.version;
+  clearRouteLine();
   Object.assign(routeEstimate,{loading:true,error:false,text:"운전 소요시간을 확인하는 중..."});
   renderRoute();
   const point = p => ({lat:Number(p.lat),lng:Number(p.lng)});
@@ -3356,7 +3378,7 @@ $("estimateRoute").onclick = async () => {
     const {routes} = await Route.computeRoutes({
       origin:point(a),destination:point(b),travelMode:"DRIVING",
       routingPreference:"TRAFFIC_AWARE_OPTIMAL",
-      fields:["durationMillis","distanceMeters"],language:"ko",region:"mx"
+      fields:["durationMillis","distanceMeters","path","viewport"],language:"ko",region:"mx"
     });
     if (version !== routeEstimate.version || key !== routeKey()) return;
     const route = routes?.[0];
@@ -3366,10 +3388,12 @@ $("estimateRoute").onclick = async () => {
       ? Math.floor(minutes/60) + "시간" + (minutes%60 ? " " + minutes%60 + "분" : "")
       : minutes + "분";
     const distance = Number.isFinite(route.distanceMeters) ? " · " + (route.distanceMeters/1000).toFixed(1) + "km" : "";
+    drawRouteLine(route);
     routeEstimate.text = "차량 약 " + time + distance;
   } catch(error) {
     if (version !== routeEstimate.version || key !== routeKey()) return;
     console.error("Route estimate failed:",error);
+    clearRouteLine();
     routeEstimate.error = true;
     routeEstimate.text = quotaMessage || "조회에 실패했으니 구글 길찾기를 이용해 주세요.";
   } finally {
