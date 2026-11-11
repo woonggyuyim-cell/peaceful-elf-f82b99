@@ -3251,13 +3251,27 @@ function clearRouteLine() {
 
 function drawRouteLine(route) {
   clearRouteLine();
-  const polylines=route.createPolylines();
+  const polylines = route.createPolylines();
   if (!polylines.length) throw new Error("No route path");
-  routePolylines=polylines;
-  routePolylines.forEach(polyline=>{
-    polyline.setOptions({strokeColor:"#2878d0",strokeOpacity:0.95,strokeWeight:6,clickable:false,zIndex:3});
-    polyline.setMap(map);
-  });
+
+  const layers = [
+    {lines: route.createPolylines(), color: "#62b8ff", opacity: 0.15, width: 18, zIndex: 1},
+    {lines: route.createPolylines(), color: "#62b8ff", opacity: 0.30, width: 11, zIndex: 2},
+    {lines: polylines, color: "#2878d0", opacity: 0.98, width: 6, zIndex: 3}
+  ];
+  routePolylines = layers.flatMap(layer => layer.lines);
+  for (const layer of layers) {
+    for (const line of layer.lines) {
+      line.setOptions({
+        strokeColor: layer.color,
+        strokeOpacity: layer.opacity,
+        strokeWeight: layer.width,
+        clickable: false,
+        zIndex: layer.zIndex
+      });
+      line.setMap(map);
+    }
+  }
   if (route.viewport) {
     map.fitBounds(route.viewport,{top:100,right:45,bottom:65,left:45});
   }
